@@ -125,7 +125,7 @@ export default function HomePage() {
         <section className="space-y-2">
           <div className="flex items-baseline justify-between">
             <span className="text-sm font-bold text-[#1a1a1a]">How much time?</span>
-            <span className="text-2xl font-black text-[#ff6b9d]">
+            <span className="text-2xl font-black text-[#c084fc]">
               {duration}
               <span className="text-sm font-bold text-[#666] ml-1">min</span>
             </span>

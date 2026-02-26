@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Settings, Trophy, Target, Flame, Zap, User, ArrowLeft, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTapFeedback } from "../hooks/useTapFeedback";
 import type { UserProfile, UserPreferences, Interest } from "@/lib/types";
 
 const interestLabels: Record<string, string> = {
@@ -163,6 +164,7 @@ export default function ProfilePage() {
   const [user] = useState<UserProfile>(mockUser);
   const [preferences, setPreferences] = useState<UserPreferences | null>(null);
   const router = useRouter();
+  const { withTap } = useTapFeedback();
 
   useEffect(() => {
     const stored = localStorage.getItem("vibequest_preferences");
@@ -177,7 +179,7 @@ export default function ProfilePage() {
       <header className="px-5 pt-5 pb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <button
-            onClick={() => router.push("/")}
+            onClick={withTap(() => router.push("/"), "light")}
             className="w-9 h-9 rounded-lg bg-white hard-border hard-shadow-sm flex items-center justify-center text-[#1a1a1a] tap-target hover:-translate-y-0.5 transition-all"
             aria-label="Back to Quests"
           >
@@ -186,7 +188,7 @@ export default function ProfilePage() {
           <h1 className="text-lg font-black text-[#1a1a1a] tracking-tight">Profile</h1>
         </div>
         <button
-          onClick={() => router.push("/settings")}
+          onClick={withTap(() => router.push("/settings"), "light")}
           className="w-9 h-9 rounded-lg bg-white hard-border hard-shadow-sm flex items-center justify-center text-[#1a1a1a] tap-target hover:-translate-y-0.5 transition-all"
           aria-label="Settings"
         >
@@ -225,7 +227,7 @@ export default function ProfilePage() {
                 <h2 className="text-xs font-black text-[#1a1a1a] uppercase tracking-wider">Your Vibes</h2>
               </div>
               <button
-                onClick={() => router.push("/settings")}
+                onClick={withTap(() => router.push("/settings"), "light")}
                 className="flex items-center gap-1 text-xs font-bold text-[#666] hover:text-[#1a1a1a] transition-colors tap-target"
               >
                 <Pencil className="w-3 h-3" />

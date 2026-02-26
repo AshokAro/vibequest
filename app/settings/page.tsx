@@ -17,6 +17,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTapFeedback } from "../hooks/useTapFeedback";
 import type { Interest, InterestOption, UserPreferences } from "@/lib/types";
 
 const interests: InterestOption[] = [
@@ -49,6 +50,7 @@ type SettingsTab = "location" | "interests";
 
 export default function SettingsPage() {
   const router = useRouter();
+  const { withTap } = useTapFeedback();
   const [activeTab, setActiveTab] = useState<SettingsTab>("location");
   const [preferences, setPreferences] = useState<UserPreferences | null>(null);
   const [location, setLocation] = useState<UserPreferences["location"]>(null);
@@ -186,7 +188,7 @@ export default function SettingsPage() {
       {/* Header */}
       <header className="px-5 pt-4 pb-3 flex items-center justify-between">
         <button
-          onClick={() => router.push("/")}
+          onClick={withTap(() => router.push("/"), "light")}
           className="w-10 h-10 rounded-xl bg-white hard-border hard-shadow-sm flex items-center justify-center text-[#1a1a1a] tap-target hover:-translate-y-0.5 transition-all"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -199,7 +201,7 @@ export default function SettingsPage() {
       <div className="px-5 mb-4">
         <div className="flex gap-2 p-1 bg-[#f5f5f5] rounded-xl">
           <button
-            onClick={() => setActiveTab("location")}
+            onClick={withTap(() => setActiveTab("location"), "light")}
             className={cn(
               "flex-1 py-2 rounded-lg text-sm font-black transition-all",
               activeTab === "location"
@@ -210,7 +212,7 @@ export default function SettingsPage() {
             Location
           </button>
           <button
-            onClick={() => setActiveTab("interests")}
+            onClick={withTap(() => setActiveTab("interests"), "light")}
             className={cn(
               "flex-1 py-2 rounded-lg text-sm font-black transition-all",
               activeTab === "interests"

@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Heart, MessageCircle, Dices, Users, ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { useTapFeedback } from "../hooks/useTapFeedback";
 import type { FeedItem } from "@/lib/types";
 
 const mockFeedItems: FeedItem[] = [
@@ -148,6 +149,7 @@ function FeedCard({
 
 export default function FeedPage() {
   const router = useRouter();
+  const { withTap } = useTapFeedback();
   const [items, setItems] = useState<FeedItem[]>(mockFeedItems);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
@@ -211,7 +213,7 @@ export default function FeedPage() {
       <header className="px-5 pt-5 pb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <button
-            onClick={() => router.push("/profile")}
+            onClick={withTap(() => router.push("/profile"), "light")}
             className="w-9 h-9 rounded-lg bg-white hard-border hard-shadow-sm flex items-center justify-center text-[#1a1a1a] tap-target hover:-translate-y-0.5 transition-all"
             aria-label="Back to Profile"
           >

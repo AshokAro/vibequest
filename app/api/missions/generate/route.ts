@@ -497,17 +497,41 @@ Output must be valid JSON with exactly 5 missions.`;
 }
 
 function parseAIResponse(content: string, request: MissionRequest): Mission[] {
-  // Extract JSON from potential markdown
-  const jsonMatch = content.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) {
-    throw new Error("No JSON found in response");
+  console.log("[parseAIResponse] Parsing content, length:", content.length);
+
+  // Try to extract JSON from markdown code blocks first
+  let jsonStr = content;
+
+  // Remove markdown code block markers if present
+  const codeBlockMatch = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+  if (codeBlockMatch) {
+    jsonStr = codeBlockMatch[1];
+    console.log("[parseAIResponse] Extracted from code block");
+  } else {
+    // Extract JSON from raw content (find the outermost curly braces)
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      jsonStr = jsonMatch[0];
+    }
   }
 
-  const parsed = JSON.parse(jsonMatch[0]);
+  console.log("[parseAIResponse] JSON string preview:", jsonStr.substring(0, 200));
+
+  let parsed;
+  try {
+    parsed = JSON.parse(jsonStr);
+  } catch (parseError) {
+    console.error("[parseAIResponse] JSON parse error:", parseError);
+    console.error("[parseAIResponse] Content that failed to parse:", jsonStr.substring(0, 500));
+    throw new Error("Failed to parse JSON response");
+  }
 
   if (!parsed.missions || !Array.isArray(parsed.missions)) {
+    console.error("[parseAIResponse] Invalid format - no missions array:", Object.keys(parsed));
     throw new Error("Invalid response format: missing missions array");
   }
+
+  console.log("[parseAIResponse] Successfully parsed", parsed.missions.length, "missions");
 
   return parsed.missions.map((m: unknown, idx: number): Mission => {
     const mission = m as Record<string, unknown>;
@@ -644,58 +668,74 @@ function generateMockMissions(request: MissionRequest): Mission[] {
 export async function POST(request: NextRequest) {
   try {
     const body: MissionRequest = await request.json();
+    console.log("[API] Received request:", JSON.stringify(body));
 
     // Validate request
     if (!body.duration || body.duration < 5 || body.duration > 120) {
+      console.log("[API] Invalid duration:", body.duration);
       return NextResponse.json({ error: "Invalid duration" }, { status: 400 });
     }
 
     let missions: Mission[];
 
-    // Try AI generation with Google Maps first, then AI
-    if (OPENAI_API_KEY) {
-      try {
-        // Step 1: Generate location queries from user interests
-        const locationQueries = generateLocationQueries(body);
+    // Check if OpenAI key is configured
+    if (!OPENAI_API_KEY) {
+      console.log("[API] No OPENAI_API_KEY configured, using mock missions");
+      missions = generateMockMissions(body);
+      return NextResponse.json({ missions });
+    }
 
-        // Step 2: Search Google Maps for verified locations (if coordinates available)
-        let verifiedLocations: Array<{ name: string; address: string; rating?: number }> = [];
+    console.log("[API] OPENAI_API_KEY is set, attempting AI generation");
 
-        if (body.location?.lat && body.location?.lng && body.location?.city) {
-          verifiedLocations = await searchVerifiedLocations(
-            locationQueries,
-            body.location.lat,
-            body.location.lng,
-            body.location.city
-          );
-        } else {
-          // No coordinates, use fallback landmarks
-          const city = body.location?.city || "city";
-          verifiedLocations = locationQueries.map(() =>
-            getFallbackLandmark(city) || { name: city, address: city }
-          );
-        }
+    try {
+      // Step 1: Generate location queries from user interests
+      const locationQueries = generateLocationQueries(body);
+      console.log("[API] Generated location queries:", locationQueries);
 
-        // Step 3: Generate missions with verified locations
-        const aiResponse = await generateMissions(body, verifiedLocations);
-        missions = parseAIResponse(aiResponse, body);
+      // Step 2: Search Google Maps for verified locations (if coordinates available)
+      let verifiedLocations: Array<{ name: string; address: string; rating?: number }> = [];
 
-        // Ensure we got valid missions
-        if (missions.length === 0) {
-          throw new Error("No missions generated");
-        }
-      } catch (aiError) {
-        console.error("AI generation failed, using fallback:", aiError);
-        missions = generateMockMissions(body);
+      if (body.location?.lat && body.location?.lng && body.location?.city) {
+        console.log("[API] Searching Google Maps for:", body.location.city);
+        verifiedLocations = await searchVerifiedLocations(
+          locationQueries,
+          body.location.lat,
+          body.location.lng,
+          body.location.city
+        );
+      } else {
+        // No coordinates, use fallback landmarks
+        console.log("[API] No coordinates, using fallback landmarks");
+        const city = body.location?.city || "city";
+        verifiedLocations = locationQueries.map(() =>
+          getFallbackLandmark(city) || { name: city, address: city }
+        );
       }
-    } else {
-      // No API key, use fallback
+
+      console.log("[API] Verified locations:", verifiedLocations.map(l => l.name));
+
+      // Step 3: Generate missions with verified locations
+      console.log("[API] Calling OpenAI...");
+      const aiResponse = await generateMissions(body, verifiedLocations);
+      console.log("[API] OpenAI response length:", aiResponse.length);
+      console.log("[API] OpenAI response preview:", aiResponse.substring(0, 500));
+
+      missions = parseAIResponse(aiResponse, body);
+      console.log("[API] Parsed missions count:", missions.length);
+
+      // Ensure we got valid missions
+      if (missions.length === 0) {
+        throw new Error("No missions generated from AI response");
+      }
+    } catch (aiError) {
+      console.error("[API] AI generation failed:", aiError);
+      console.log("[API] Falling back to mock missions");
       missions = generateMockMissions(body);
     }
 
     return NextResponse.json({ missions });
   } catch (error) {
-    console.error("Mission generation error:", error);
+    console.error("[API] Mission generation error:", error);
     return NextResponse.json(
       { error: "Failed to generate missions" },
       { status: 500 }

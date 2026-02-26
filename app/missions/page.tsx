@@ -273,34 +273,47 @@ export default function MissionsPage() {
   }, [missions, currentIndex, router, triggerHaptic]);
 
   const generateMissions = useCallback(async () => {
-    if (!request) return;
+    if (!request) {
+      console.log("[Frontend] No request data, skipping generation");
+      return;
+    }
 
+    console.log("[Frontend] Starting mission generation with request:", request);
     setLoading(true);
 
     try {
       const prefs = localStorage.getItem("vibequest_preferences");
       const userPrefs = prefs ? JSON.parse(prefs) : null;
+      console.log("[Frontend] User preferences:", userPrefs);
+
+      const requestBody = {
+        ...request,
+        location: userPrefs?.location,
+        interests: userPrefs?.interests,
+        preferredMissionTypes: userPrefs?.preferredMissionTypes,
+      };
+      console.log("[Frontend] Sending request body:", requestBody);
 
       const response = await fetch("/api/missions/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...request,
-          location: userPrefs?.location,
-          interests: userPrefs?.interests,
-          preferredMissionTypes: userPrefs?.preferredMissionTypes,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
+      console.log("[Frontend] Response status:", response.status);
+
       if (!response.ok) {
-        throw new Error("Failed to generate missions");
+        const errorText = await response.text();
+        console.error("[Frontend] API error:", errorText);
+        throw new Error(`Failed to generate missions: ${response.status}`);
       }
 
       const data = await response.json();
+      console.log("[Frontend] Received missions:", data.missions?.length);
       setMissions(data.missions);
       setCurrentIndex(0);
     } catch (error) {
-      console.error("Failed to generate missions:", error);
+      console.error("[Frontend] Failed to generate missions:", error);
     } finally {
       setLoading(false);
     }

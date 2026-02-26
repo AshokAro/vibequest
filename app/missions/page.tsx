@@ -7,8 +7,25 @@ import { useRouter } from "next/navigation";
 import { useSwipe } from "../hooks/useSwipe";
 import { useTapFeedback } from "../hooks/useTapFeedback";
 import { cn } from "@/lib/utils";
-import type { Mission, MissionRequest } from "@/lib/types";
+import type { Mission, MissionRequest, Interest } from "@/lib/types";
 import { getCachedLocations, saveLocationsToCache, getLocationsForQueries, type CachedLocation } from "@/lib/locationCache";
+
+// Valid interest values for validation
+const VALID_INTERESTS: Interest[] = [
+  "creative", "music_sound", "movement_body", "food_drink", "culture_knowledge",
+  "nature_outdoors", "people_social", "mind_curiosity", "collecting_hunting", "niche_unexpected",
+  // Specific interests
+  "photography", "sketching", "painting", "street_art", "journaling", "poetry", "collage", "craft_diy", "origami", "calligraphy",
+  "live_music", "playing_instrument", "field_recording", "music_discovery", "singing",
+  "running", "cycling", "yoga", "hiking", "swimming", "strength_training", "martial_arts", "dance", "skateboarding",
+  "street_food", "cafe_hopping", "cooking", "food_markets", "new_cuisines", "tea_coffee", "fermentation",
+  "history", "architecture", "museums", "archaeology", "religion", "languages", "philosophy",
+  "birdwatching", "botany", "parks", "stargazing", "weather", "insects", "foraging",
+  "people_watching", "talking_strangers", "community_events", "volunteering", "markets_bazaars", "board_games", "open_mics",
+  "puzzles", "reading", "trivia", "cartography", "urban_exploration", "hidden_history", "science_experiments",
+  "thrift_shopping", "flea_markets", "antiques", "stamps_coins", "vinyl", "rare_books", "ephemera",
+  "signage", "shadows_light", "patterns", "decay_texture", "doors_windows", "staircases", "rooftops", "reflections", "manhole_covers", "typos",
+];
 // @ts-ignore - types are in app/lib not root lib
 
 // Stat icon mapping
@@ -309,10 +326,15 @@ export default function MissionsPage() {
 
       // If we have cached locations, include them in the request
       // The API will use them if available, reducing Google Maps calls
+      // Filter out invalid/old interests that don't match current schema
+      const validInterests = (userPrefs?.interests || []).filter((i: Interest) =>
+        VALID_INTERESTS.includes(i)
+      );
+
       const requestBody = {
         ...request,
         location: userPrefs?.location,
-        interests: userPrefs?.interests,
+        interests: validInterests,
         preferredMissionTypes: userPrefs?.preferredMissionTypes,
         cachedLocations: cachedLocations || undefined,
       };

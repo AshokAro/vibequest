@@ -20,6 +20,23 @@ import { cn } from "@/lib/utils";
 import { useTapFeedback } from "../hooks/useTapFeedback";
 import type { Interest, InterestOption, UserPreferences } from "@/lib/types";
 
+// Valid interest values for validation
+const VALID_INTERESTS: Interest[] = [
+  "creative", "music_sound", "movement_body", "food_drink", "culture_knowledge",
+  "nature_outdoors", "people_social", "mind_curiosity", "collecting_hunting", "niche_unexpected",
+  // Specific interests
+  "photography", "sketching", "painting", "street_art", "journaling", "poetry", "collage", "craft_diy", "origami", "calligraphy",
+  "live_music", "playing_instrument", "field_recording", "music_discovery", "singing",
+  "running", "cycling", "yoga", "hiking", "swimming", "strength_training", "martial_arts", "dance", "skateboarding",
+  "street_food", "cafe_hopping", "cooking", "food_markets", "new_cuisines", "tea_coffee", "fermentation",
+  "history", "architecture", "museums", "archaeology", "religion", "languages", "philosophy",
+  "birdwatching", "botany", "parks", "stargazing", "weather", "insects", "foraging",
+  "people_watching", "talking_strangers", "community_events", "volunteering", "markets_bazaars", "board_games", "open_mics",
+  "puzzles", "reading", "trivia", "cartography", "urban_exploration", "hidden_history", "science_experiments",
+  "thrift_shopping", "flea_markets", "antiques", "stamps_coins", "vinyl", "rare_books", "ephemera",
+  "signage", "shadows_light", "patterns", "decay_texture", "doors_windows", "staircases", "rooftops", "reflections", "manhole_covers", "typos",
+];
+
 const interests: InterestOption[] = [
   { value: "creative", label: "Creative", emoji: "🎨", description: "Making, documenting, observing" },
   { value: "music_sound", label: "Music & Sound", emoji: "🎵", description: "Live gigs, field recording" },
@@ -68,8 +85,20 @@ export default function SettingsPage() {
       const parsed: UserPreferences = JSON.parse(prefs);
       setPreferences(parsed);
       setLocation(parsed.location);
-      setSelectedInterests(parsed.interests || []);
+      // Filter out invalid/old interests that don't match current schema
+      const validInterests = (parsed.interests || []).filter((i: Interest) =>
+        VALID_INTERESTS.includes(i)
+      );
+      setSelectedInterests(validInterests);
       setPreferredTypes(parsed.preferredMissionTypes || ["outdoor", "indoor"]);
+      // If we filtered out invalid interests, save the cleaned preferences back
+      if (validInterests.length !== (parsed.interests || []).length) {
+        const cleanedPrefs: UserPreferences = {
+          ...parsed,
+          interests: validInterests,
+        };
+        localStorage.setItem("vibequest_preferences", JSON.stringify(cleanedPrefs));
+      }
     }
   }, []);
 

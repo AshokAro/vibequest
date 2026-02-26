@@ -8,6 +8,23 @@ import { cn } from "@/lib/utils";
 import { useTapFeedback } from "../hooks/useTapFeedback";
 import type { UserProfile, UserPreferences, Interest } from "@/lib/types";
 
+// Valid interest values for validation
+const VALID_INTERESTS: Interest[] = [
+  "creative", "music_sound", "movement_body", "food_drink", "culture_knowledge",
+  "nature_outdoors", "people_social", "mind_curiosity", "collecting_hunting", "niche_unexpected",
+  // Specific interests
+  "photography", "sketching", "painting", "street_art", "journaling", "poetry", "collage", "craft_diy", "origami", "calligraphy",
+  "live_music", "playing_instrument", "field_recording", "music_discovery", "singing",
+  "running", "cycling", "yoga", "hiking", "swimming", "strength_training", "martial_arts", "dance", "skateboarding",
+  "street_food", "cafe_hopping", "cooking", "food_markets", "new_cuisines", "tea_coffee", "fermentation",
+  "history", "architecture", "museums", "archaeology", "religion", "languages", "philosophy",
+  "birdwatching", "botany", "parks", "stargazing", "weather", "insects", "foraging",
+  "people_watching", "talking_strangers", "community_events", "volunteering", "markets_bazaars", "board_games", "open_mics",
+  "puzzles", "reading", "trivia", "cartography", "urban_exploration", "hidden_history", "science_experiments",
+  "thrift_shopping", "flea_markets", "antiques", "stamps_coins", "vinyl", "rare_books", "ephemera",
+  "signage", "shadows_light", "patterns", "decay_texture", "doors_windows", "staircases", "rooftops", "reflections", "manhole_covers", "typos",
+];
+
 const interestLabels: Record<string, string> = {
   creative: "Creative",
   music_sound: "Music",
@@ -169,7 +186,22 @@ export default function ProfilePage() {
   useEffect(() => {
     const stored = localStorage.getItem("vibequest_preferences");
     if (stored) {
-      setPreferences(JSON.parse(stored));
+      const parsed: UserPreferences = JSON.parse(stored);
+      // Filter out invalid/old interests that don't match current schema
+      const validInterests = (parsed.interests || []).filter((i: Interest) =>
+        VALID_INTERESTS.includes(i)
+      );
+      if (validInterests.length !== (parsed.interests || []).length) {
+        // Save cleaned preferences back if there were invalid interests
+        const cleanedPrefs: UserPreferences = {
+          ...parsed,
+          interests: validInterests,
+        };
+        localStorage.setItem("vibequest_preferences", JSON.stringify(cleanedPrefs));
+        setPreferences(cleanedPrefs);
+      } else {
+        setPreferences(parsed);
+      }
     }
   }, []);
 

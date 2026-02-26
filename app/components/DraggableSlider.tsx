@@ -147,15 +147,6 @@ export function DraggableSlider({
           backgroundColor: accentColor,
         }}
       />
-
-      {/* Thumb handle */}
-      <div
-        className="absolute top-1/2 -translate-y-1/2 w-8 h-8 bg-white rounded-lg shadow-lg border-2 border-[#1a1a1a] transition-all duration-75"
-        style={{
-          left: `calc(${percentage}% - 16px)`,
-          transform: `translateY(-50%) scale(${isDragging ? 1.1 : 1})`,
-        }}
-      />
     </div>
   );
 }

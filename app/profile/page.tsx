@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Settings, Trophy, Target, Flame, Zap, User } from "lucide-react";
+import { Settings, Trophy, Target, Flame, Zap, User, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { UserProfile } from "@/lib/types";
 
@@ -134,9 +135,10 @@ const statColors = {
 
 export default function ProfilePage() {
   const [user] = useState<UserProfile>(mockUser);
+  const router = useRouter();
 
   return (
-    <main className="h-full safe-top safe-x bg-[#fafafa] pb-24 overflow-y-auto">
+    <main className="h-full safe-top safe-x bg-[#fafafa] pb-6 overflow-y-auto">
       {/* Header */}
       <header className="px-5 pt-5 pb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -145,12 +147,6 @@ export default function ProfilePage() {
           </div>
           <h1 className="text-lg font-black text-[#1a1a1a] tracking-tight">Profile</h1>
         </div>
-        <button
-          className="w-8 h-8 rounded-lg bg-white hard-border hard-shadow-sm flex items-center justify-center text-[#1a1a1a] tap-target hover:-translate-y-0.5 transition-all"
-          aria-label="Settings"
-        >
-          <Settings className="w-4 h-4" />
-        </button>
       </header>
 
       <div className="px-5 space-y-6">
@@ -218,6 +214,30 @@ export default function ProfilePage() {
             </div>
           </div>
         </section>
+
+        {/* Settings Button */}
+        <button
+          onClick={() => router.push("/settings")}
+          className="w-full flex items-center justify-between p-4 bg-white hard-border rounded-xl hard-shadow tap-target hover:-translate-y-0.5 transition-all"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-[#e5e5e5] flex items-center justify-center">
+              <Settings className="w-4 h-4 text-[#1a1a1a]" />
+            </div>
+            <span className="text-sm font-black text-[#1a1a1a]">Settings</span>
+          </div>
+          <ChevronRight className="w-4 h-4 text-[#666]" />
+        </button>
+
+        {/* Dev: Feed Link */}
+        <div className="pt-4 border-t border-[#e5e5e5]">
+          <button
+            onClick={() => router.push("/feed")}
+            className="w-full text-center text-xs text-[#999] hover:text-[#666] font-medium py-2 transition-colors"
+          >
+            Dev: Feed
+          </button>
+        </div>
       </div>
     </main>
   );

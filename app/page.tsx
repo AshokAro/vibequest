@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Dices, Zap, Clock, MapPin, Settings } from "lucide-react";
+import { Dices, Zap, Clock, MapPin, User } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import type { Mood, UserPreferences } from "@/lib/types";
@@ -101,11 +101,11 @@ export default function HomePage() {
             </div>
           </div>
           <button
-            onClick={() => router.push("/settings")}
+            onClick={() => router.push("/profile")}
             className="w-9 h-9 rounded-lg bg-white hard-border hard-shadow-sm flex items-center justify-center text-[#1a1a1a] tap-target hover:-translate-y-0.5 transition-all"
-            aria-label="Settings"
+            aria-label="Profile"
           >
-            <Settings className="w-4 h-4" />
+            <User className="w-4 h-4" />
           </button>
         </div>
       </header>

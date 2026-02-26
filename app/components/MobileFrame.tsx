@@ -1,50 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Target, User, Users } from "lucide-react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { cn } from "@/lib/utils";
-import { useTapFeedback } from "../hooks/useTapFeedback";
-
-const navItems = [
-  { href: "/", icon: Target, label: "Quests" },
-  { href: "/feed", icon: Users, label: "Feed" },
-  { href: "/profile", icon: User, label: "Profile" },
-];
-
-function BottomNavContent() {
-  const pathname = usePathname();
-  const { withTap } = useTapFeedback();
-
-  return (
-    <div className="flex items-center justify-around h-full px-2 bg-white">
-      {navItems.map((item) => {
-        const Icon = item.icon;
-        const isActive = pathname === item.href;
-
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            onClick={withTap(() => {}, "light")}
-            className={cn(
-              "flex flex-col items-center justify-center py-2 px-4 tap-target transition-all duration-200 rounded-xl m-1",
-              isActive
-                ? "bg-[#ff6b9d] text-white font-bold"
-                : "text-[#666] hover:text-[#1a1a1a] hover:bg-[#f5f5f5]"
-            )}
-            aria-label={item.label}
-            aria-current={isActive ? "page" : undefined}
-          >
-            <Icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 2} />
-            <span className="text-xs mt-1 font-bold">{item.label}</span>
-          </Link>
-        );
-      })}
-    </div>
-  );
-}
 
 export function MobileFrame({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);
@@ -70,13 +26,8 @@ export function MobileFrame({ children }: { children: React.ReactNode }) {
               <div className="absolute top-0 left-0 right-0 h-6 bg-[#fafafa] z-20" />
 
               {/* Scrollable Content Area */}
-              <div className="absolute inset-0 top-6 bottom-[76px] overflow-y-auto overflow-x-hidden no-scrollbar">
+              <div className="absolute inset-0 top-6 bottom-[10px] overflow-y-auto overflow-x-hidden no-scrollbar">
                 {children}
-              </div>
-
-              {/* Fixed Bottom Nav - Inside the phone frame */}
-              <div className="absolute bottom-[10px] left-0 right-0 h-[66px] z-20">
-                <BottomNavContent />
               </div>
 
               {/* Home Indicator */}
@@ -93,15 +44,11 @@ export function MobileFrame({ children }: { children: React.ReactNode }) {
         </div>
       </div>
 
-      {/* Mobile: Full Screen - No grey container */}
+      {/* Mobile: Full Screen - No grey container, no bottom nav */}
       <div className="md:hidden fixed inset-0 w-full h-[100dvh] overflow-hidden flex flex-col bg-[#fafafa]">
         {/* Scrollable content area */}
         <div className="flex-1 overflow-y-auto overflow-x-hidden no-scrollbar min-h-0">
           {children}
-        </div>
-        {/* Fixed nav at bottom */}
-        <div className="h-[66px] flex-shrink-0 bg-white border-t-2 border-[#1a1a1a] safe-bottom">
-          <BottomNavContent />
         </div>
       </div>
     </div>

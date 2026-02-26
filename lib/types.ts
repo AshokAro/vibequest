@@ -23,6 +23,7 @@ export interface Mission {
   };
   xp_reward: number;
   icon?: string;
+  is_wildcard?: boolean;
 }
 
 export interface UserProfile {

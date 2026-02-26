@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, X, RefreshCw, MapPin, Clock, Zap, ChevronUp, DollarSign, Dumbbell, Brain, Palette, Users, BookOpen, Target, Star } from "lucide-react";
+import { Check, X, RefreshCw, MapPin, Clock, Zap, ChevronUp, DollarSign, Dumbbell, Brain, Palette, Users, BookOpen, Target, Star, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useSwipe } from "../hooks/useSwipe";
 import { useTapFeedback } from "../hooks/useTapFeedback";
@@ -122,6 +122,7 @@ function MissionCard({
   };
 
   const emoji = missionEmojis[mood || "chill"] || "✨";
+  const isWildcard = mission.is_wildcard;
 
   return (
     <motion.div
@@ -139,17 +140,33 @@ function MissionCard({
     >
       <div
         className={cn(
-          "bg-white rounded-2xl border-2 border-[#1a1a1a] overflow-hidden tap-target no-select hard-shadow flex flex-col",
+          "rounded-2xl border-2 overflow-hidden tap-target no-select hard-shadow flex flex-col",
+          isWildcard
+            ? "bg-gradient-to-br from-[#ff6b9d]/10 via-white to-[#c084fc]/10 border-[#ff6b9d]"
+            : "bg-white border-[#1a1a1a]",
           isTop ? "cursor-grab active:cursor-grabbing" : "opacity-50 scale-95"
         )}
         style={{ height: 'calc(100vh - 240px)', maxHeight: '480px' }}
       >
         {/* Card Header - Emoji center, XP right */}
         <div className="relative px-4 pt-6 pb-4 flex-shrink-0">
+          {/* Wildcard Badge - Top Left */}
+          {isWildcard && (
+            <div className="absolute top-4 left-4 animate-pulse">
+              <div className="flex items-center gap-1 bg-gradient-to-r from-[#ff6b9d] to-[#c084fc] hard-border rounded-full px-2.5 py-1">
+                <Sparkles className="w-3 h-3 text-white" />
+                <span className="text-xs font-black text-white">WILDCARD</span>
+              </div>
+            </div>
+          )}
+
           {/* XP Badge - Top Right */}
-          <div className="absolute top-4 right-4 flex items-center gap-1 bg-[#fbbf24] hard-border rounded-full px-2.5 py-1">
-            <Star className="w-3 h-3 text-[#1a1a1a]" fill="currentColor" />
-            <span className="text-xs font-black text-[#1a1a1a]">{mission.xp_reward}</span>
+          <div className={cn(
+            "absolute top-4 right-4 flex items-center gap-1 hard-border rounded-full px-2.5 py-1",
+            isWildcard ? "bg-[#ff6b9d] text-white" : "bg-[#fbbf24] text-[#1a1a1a]"
+          )}>
+            <Star className={cn("w-3 h-3", isWildcard ? "text-white" : "text-[#1a1a1a]")} fill="currentColor" />
+            <span className="text-xs font-black">{mission.xp_reward}{isWildcard && "!"}</span>
           </div>
 
           {/* Emoji - Top Center */}

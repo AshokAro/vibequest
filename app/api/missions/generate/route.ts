@@ -700,6 +700,24 @@ function parseAIResponse(content: string, request: MissionRequest): Mission[] {
       discipline: interestsUsed.some(i => ["running", "yoga", "strength_training", "puzzles", "cartography"].includes(i)) ? 10 : 0,
     };
 
+    // Check if this is a wildcard mission
+    const isWildcard = !!mission.wildcard;
+
+    // Bonus XP for wildcard missions (+25% bonus, min 25 XP)
+    const baseXP = calculateXP({
+      id: `mission-${Date.now()}-${idx}`,
+      title: String(mission.title),
+      description: fullDescription,
+      steps: [],
+      duration_minutes: durationMinutes,
+      budget_estimate: budgetEstimate,
+      effort: { physical: physicalLevel, mental: mentalLevel },
+      location: { type: "nearby", suggestion: request.location?.city || "Local area" },
+      intrinsic_rewards: intrinsicRewards,
+      xp_reward: 0,
+    });
+    const wildcardBonus = isWildcard ? Math.max(25, Math.floor(baseXP * 0.25)) : 0;
+
     const missionData: Omit<Mission, "xp_reward"> = {
       id: `mission-${Date.now()}-${idx}`,
       title: String(mission.title),
@@ -716,12 +734,13 @@ function parseAIResponse(content: string, request: MissionRequest): Mission[] {
         suggestion: request.location?.city || "Local area",
       },
       intrinsic_rewards: intrinsicRewards,
-      icon: "✨",
+      icon: isWildcard ? "🎲" : "✨",
+      is_wildcard: isWildcard,
     };
 
     return {
       ...missionData,
-      xp_reward: calculateXP(missionData),
+      xp_reward: baseXP + wildcardBonus,
     };
   });
 }
@@ -762,17 +781,33 @@ function generateMockMissions(request: MissionRequest): Mission[] {
       location: { type: "nearby" as const, suggestion: `Historic or cultural spot in ${city}` },
       rewards: { fitness: 10, calm: 5, creativity: 5, social: 0, knowledge: 20, discipline: 10 },
     },
+    // Wildcard mock mission - appears last with bonus XP
     {
-      title: `[MOCK] Street Food Discovery`,
-      description: `[AI FAILED - FALLBACK] Find and try a local snack or street food specialty in ${city}.`,
-      steps: ["Walk to a busy food area", "Pick something you've never tried", "Savor it mindfully", "Chat with the vendor"],
-      effort: { physical: 2, mental: 1 },
-      location: { type: "nearby" as const, suggestion: `Popular food street in ${city}` },
-      rewards: { fitness: 5, calm: 10, creativity: 5, social: 15, knowledge: 10, discipline: 0 },
+      title: `[MOCK WILDCARD] ${city} Architecture Hunt`,
+      description: `[AI FAILED - FALLBACK] Find the oldest building on your street and photograph 3 unique architectural details others might miss.`,
+      steps: ["Walk one block in any direction", "Identify the oldest structure", "Find 3 unusual details", "Document with photos"],
+      effort: { physical: 2, mental: 3 },
+      location: { type: "nearby" as const, suggestion: `Your neighborhood in ${city}` },
+      rewards: { fitness: 5, calm: 10, creativity: 25, social: 0, knowledge: 15, discipline: 10 },
+      is_wildcard: true,
     },
   ];
 
   return templates.map((template, idx) => {
+    const isWildcard = (template as Record<string, unknown>).is_wildcard as boolean || false;
+    const baseXP = calculateXP({
+      id: `mission-${Date.now()}-${idx}`,
+      title: template.title,
+      description: template.description,
+      steps: template.steps,
+      duration_minutes: request.duration,
+      budget_estimate: Math.floor(Math.random() * 10),
+      effort: template.effort,
+      location: template.location,
+      intrinsic_rewards: template.rewards,
+      xp_reward: 0,
+    });
+
     const mission: Omit<Mission, "xp_reward"> = {
       id: `mission-${Date.now()}-${idx}`,
       title: template.title,
@@ -783,11 +818,16 @@ function generateMockMissions(request: MissionRequest): Mission[] {
       effort: template.effort,
       location: template.location,
       intrinsic_rewards: template.rewards,
+      icon: isWildcard ? "🎲" : "✨",
+      is_wildcard: isWildcard,
     };
+
+    // Apply wildcard bonus XP
+    const wildcardBonus = isWildcard ? Math.max(25, Math.floor(baseXP * 0.25)) : 0;
 
     return {
       ...mission,
-      xp_reward: calculateXP(mission),
+      xp_reward: baseXP + wildcardBonus,
     };
   });
 }

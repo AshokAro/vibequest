@@ -16,15 +16,16 @@ export function useTapFeedback() {
     [triggerHaptic]
   );
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const withTap = useCallback(
-    <T extends (...args: unknown[]) => void>(
+    <T extends (...args: any[]) => void>(
       handler: T,
       intensity: HapticIntensity = "light"
-    ): T => {
-      return ((...args: unknown[]) => {
+    ): ((...args: Parameters<T>) => void) => {
+      return (...args: Parameters<T>) => {
         triggerHaptic(intensity);
         handler(...args);
-      }) as T;
+      };
     },
     [triggerHaptic]
   );

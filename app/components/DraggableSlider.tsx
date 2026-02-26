@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { useHaptic } from "../hooks/useHaptic";
 
 interface DraggableSliderProps {
   value: number;
@@ -27,11 +28,14 @@ export function DraggableSlider({
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragValue, setDragValue] = useState(value);
+  const lastStepValueRef = useRef(value);
+  const { triggerHaptic } = useHaptic();
 
   // Sync dragValue with prop value when not dragging
   useEffect(() => {
     if (!isDragging) {
       setDragValue(value);
+      lastStepValueRef.current = value;
     }
   }, [value, isDragging]);
 
@@ -51,15 +55,23 @@ export function DraggableSlider({
     setIsDragging(true);
     const newValue = calculateValueFromPosition(clientX);
     setDragValue(newValue);
+    lastStepValueRef.current = newValue;
     onChange(newValue);
-  }, [calculateValueFromPosition, onChange]);
+    triggerHaptic("light");
+  }, [calculateValueFromPosition, onChange, triggerHaptic]);
 
   const handleMove = useCallback((clientX: number) => {
     if (!isDragging) return;
     const newValue = calculateValueFromPosition(clientX);
-    setDragValue(newValue);
-    onChange(newValue);
-  }, [isDragging, calculateValueFromPosition, onChange]);
+
+    // Only update if value changed to a new step
+    if (newValue !== lastStepValueRef.current) {
+      setDragValue(newValue);
+      lastStepValueRef.current = newValue;
+      onChange(newValue);
+      triggerHaptic("light");
+    }
+  }, [isDragging, calculateValueFromPosition, onChange, triggerHaptic]);
 
   const handleEnd = useCallback(() => {
     setIsDragging(false);

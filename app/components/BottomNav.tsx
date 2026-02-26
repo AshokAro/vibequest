@@ -1,5 +1,8 @@
 "use client";
 
+// TODO: BottomNav is currently unused (bottom nav was removed from app)
+// Keeping for potential future use - remove if navigation structure stays as-is
+
 import { useEffect, useState, useRef } from "react";
 import { Home, Compass, User, Users } from "lucide-react";
 import Link from "next/link";

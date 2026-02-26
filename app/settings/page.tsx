@@ -20,7 +20,8 @@ import { cn } from "@/lib/utils";
 import { useTapFeedback } from "../hooks/useTapFeedback";
 import type { Interest, InterestOption, UserPreferences } from "@/lib/types";
 
-// Valid interest values for validation
+// TODO: Consolidate - VALID_INTERESTS is duplicated in profile/page.tsx, settings/page.tsx, and missions/page.tsx
+// Move to lib/constants.ts in future cleanup
 const VALID_INTERESTS: Interest[] = [
   "creative", "music_sound", "movement_body", "food_drink", "culture_knowledge",
   "nature_outdoors", "people_social", "mind_curiosity", "collecting_hunting", "niche_unexpected",

@@ -13,6 +13,8 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
+  // Empty turbopack config to silence the warning, next-pwa uses webpack
+  turbopack: {},
 };
 
 export default withPWA(nextConfig);

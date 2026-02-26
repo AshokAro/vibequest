@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import {
@@ -14,10 +14,18 @@ import {
   Compass,
   BookOpen,
   Users,
+  MapPinned,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTapFeedback } from "../hooks/useTapFeedback";
 import type { Interest, InterestOption, UserPreferences } from "@/lib/types";
+
+interface PlacePrediction {
+  place_id: string;
+  description: string;
+  main_text: string;
+  secondary_text: string;
+}
 
 const interests: InterestOption[] = [
   { value: "creative", label: "Creative", emoji: "🎨", description: "Making, documenting, observing" },
@@ -58,6 +66,10 @@ export default function OnboardingPage() {
   const [preferredTypes, setPreferredTypes] = useState<UserPreferences["preferredMissionTypes"]>(["outdoor", "indoor"]);
   const [manualCity, setManualCity] = useState("");
   const [showManualInput, setShowManualInput] = useState(false);
+  const [placePredictions, setPlacePredictions] = useState<PlacePrediction[]>([]);
+  const [isSearchingPlaces, setIsSearchingPlaces] = useState(false);
+  const [showPredictions, setShowPredictions] = useState(false);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const prefs = localStorage.getItem("vibequest_preferences");
@@ -111,35 +123,83 @@ export default function OnboardingPage() {
     );
   }, []);
 
-  const setManualLocation = useCallback(async () => {
-    if (!manualCity.trim()) return;
+  // Search places with debounce
+  const searchPlaces = useCallback(async (input: string) => {
+    if (!input.trim() || input.length < 2) {
+      setPlacePredictions([]);
+      return;
+    }
+
+    setIsSearchingPlaces(true);
+    try {
+      const response = await fetch(`/api/places/autocomplete?input=${encodeURIComponent(input)}`);
+      const data = await response.json();
+
+      if (data.predictions) {
+        setPlacePredictions(data.predictions);
+        setShowPredictions(true);
+      }
+    } catch (error) {
+      console.error("Failed to search places:", error);
+    } finally {
+      setIsSearchingPlaces(false);
+    }
+  }, []);
+
+  // Debounced search
+  useEffect(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    if (manualCity.length >= 2) {
+      searchTimeoutRef.current = setTimeout(() => {
+        searchPlaces(manualCity);
+      }, 300);
+    } else {
+      setPlacePredictions([]);
+      setShowPredictions(false);
+    }
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [manualCity, searchPlaces]);
+
+  const selectPlace = useCallback(async (prediction: PlacePrediction) => {
     setIsLocating(true);
+    setShowPredictions(false);
     setLocationError(null);
 
     try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(manualCity)}&limit=1`
-      );
+      const response = await fetch(`/api/places/details?place_id=${prediction.place_id}`);
       const data = await response.json();
 
-      if (data && data.length > 0) {
-        const result = data[0];
-        setLocation({
-          lat: parseFloat(result.lat),
-          lng: parseFloat(result.lon),
-          city: result.display_name.split(",")[0],
-          country: result.display_name.split(",").pop()?.trim() || "",
-        });
+      if (data.location) {
+        setLocation(data.location);
+        setManualCity(prediction.main_text);
         setShowManualInput(false);
       } else {
-        setLocationError("City not found.");
+        setLocationError("Could not get location details.");
       }
     } catch {
-      setLocationError("Failed to look up.");
+      setLocationError("Failed to get location details.");
     } finally {
       setIsLocating(false);
     }
-  }, [manualCity]);
+  }, []);
+
+  const setManualLocation = useCallback(async () => {
+    if (!manualCity.trim()) return;
+    // If there are predictions, use the first one
+    if (placePredictions.length > 0) {
+      await selectPlace(placePredictions[0]);
+    } else {
+      setLocationError("Please select a location from the list.");
+    }
+  }, [manualCity, placePredictions, selectPlace]);
 
   const toggleInterest = (interest: Interest) => {
     setSelectedInterests((prev) =>
@@ -169,7 +229,7 @@ export default function OnboardingPage() {
   const canComplete = selectedInterests.length >= 2;
 
   return (
-    <main className="h-full safe-top safe-x bg-[#fafafa] overflow-y-auto">
+    <main className="h-[100dvh] safe-top safe-x bg-[#fafafa] flex flex-col overflow-hidden">
       {/* Progress Bar */}
       <div className="fixed top-0 left-0 right-0 h-1.5 bg-[#e5e5e5]">
         <motion.div
@@ -191,7 +251,7 @@ export default function OnboardingPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="flex flex-col items-center justify-center min-h-screen px-5"
+            className="flex flex-col items-center justify-center flex-1 px-5 overflow-y-auto"
           >
             <div className="w-16 h-16 rounded-xl bg-[#ff6b9d] hard-border hard-shadow flex items-center justify-center mb-6">
               <span className="text-3xl">🎯</span>
@@ -222,7 +282,7 @@ export default function OnboardingPage() {
             initial={{ opacity: 0, x: 100 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -100 }}
-            className="flex flex-col min-h-screen px-5 py-8"
+            className="flex flex-col flex-1 px-5 py-8 overflow-hidden"
           >
             <div className="flex-1">
               <div className="w-12 h-12 rounded-xl bg-[#22d3ee] hard-border hard-shadow flex items-center justify-center mb-4">
@@ -295,39 +355,64 @@ export default function OnboardingPage() {
                       Or enter city manually
                     </button>
                   ) : (
-                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-2">
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-2 relative">
                       <div className="flex gap-2">
                         <div className="flex-1 relative">
                           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#666]" />
                           <input
                             type="text"
                             value={manualCity}
-                            onChange={(e) => setManualCity(e.target.value)}
-                            onKeyDown={(e) => e.key === "Enter" && setManualLocation()}
-                            placeholder="Enter city..."
+                            onChange={(e) => {
+                              setManualCity(e.target.value);
+                              setShowPredictions(true);
+                            }}
+                            onFocus={() => setShowPredictions(true)}
+                            placeholder="Search for a city..."
                             className="w-full pl-10 pr-3 py-3 bg-white hard-border rounded-lg text-sm text-[#1a1a1a] placeholder:text-[#999] focus:outline-none focus:ring-2 focus:ring-[#ff6b9d] font-bold"
                             autoFocus
                           />
+                          {isSearchingPlaces && (
+                            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#666] animate-spin" />
+                          )}
                         </div>
                         <button
-                          onClick={withTap(setManualLocation, "light")}
-                          disabled={!manualCity.trim() || isLocating}
-                          className={cn(
-                            "px-4 py-3 rounded-lg font-black text-sm tap-target transition-all hard-border hard-shadow",
-                            manualCity.trim() && !isLocating
-                              ? "bg-[#ff6b9d] text-white hard-shadow-hover"
-                              : "bg-[#e5e5e5] text-[#999] cursor-not-allowed shadow-none"
-                          )}
+                          onClick={withTap(() => { setShowManualInput(false); setShowPredictions(false); setLocationError(null); }, "light")}
+                          className="px-4 py-3 rounded-lg font-black text-sm tap-target transition-all hard-border bg-[#e5e5e5] text-[#666] hover:text-[#1a1a1a]"
                         >
-                          {isLocating ? <Loader2 className="w-4 h-4 animate-spin" /> : "Set"}
+                          Cancel
                         </button>
                       </div>
-                      <button
-                        onClick={withTap(() => { setShowManualInput(false); setLocationError(null); }, "light")}
-                        className="text-xs text-[#666] hover:text-[#1a1a1a] font-bold"
-                      >
-                        Cancel
-                      </button>
+
+                      {/* Autocomplete Dropdown */}
+                      {showPredictions && placePredictions.length > 0 && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="absolute z-50 left-0 right-0 top-full mt-1 bg-white hard-border rounded-lg shadow-lg max-h-60 overflow-y-auto"
+                        >
+                          {placePredictions.map((prediction) => (
+                            <button
+                              key={prediction.place_id}
+                              onClick={() => selectPlace(prediction)}
+                              className="w-full px-4 py-3 text-left hover:bg-[#f5f5f5] border-b border-[#e5e5e5] last:border-b-0 tap-target"
+                            >
+                              <div className="flex items-center gap-2">
+                                <MapPinned className="w-4 h-4 text-[#ff6b9d] flex-shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-bold text-[#1a1a1a] truncate">{prediction.main_text}</p>
+                                  <p className="text-xs text-[#666] truncate">{prediction.secondary_text}</p>
+                                </div>
+                              </div>
+                            </button>
+                          ))}
+                        </motion.div>
+                      )}
+
+                      {showPredictions && manualCity.length >= 2 && !isSearchingPlaces && placePredictions.length === 0 && (
+                        <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white hard-border rounded-lg shadow-lg p-4 text-center">
+                          <p className="text-sm text-[#666]">No cities found. Try a different search.</p>
+                        </div>
+                      )}
                     </motion.div>
                   )}
                 </div>
@@ -366,9 +451,9 @@ export default function OnboardingPage() {
             initial={{ opacity: 0, x: 100 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -100 }}
-            className="flex flex-col min-h-screen px-5 py-8"
+            className="flex flex-col flex-1 px-5 py-8 overflow-hidden"
           >
-            <div className="flex-1">
+            <div className="flex-shrink-0">
               <div className="w-12 h-12 rounded-xl bg-[#fbbf24] hard-border hard-shadow flex items-center justify-center mb-4">
                 <span className="text-2xl">💖</span>
               </div>
@@ -402,11 +487,14 @@ export default function OnboardingPage() {
                 </div>
               </div>
 
-              {/* Interests Grid */}
               <p className="text-xs font-black text-[#1a1a1a] mb-2">
                 Interests ({selectedInterests.length} picked)
               </p>
-              <div className="grid grid-cols-2 gap-2">
+            </div>
+
+            {/* Scrollable Interests Grid */}
+            <div className="flex-1 overflow-y-auto min-h-0 -mx-5 px-5">
+              <div className="grid grid-cols-2 gap-2 pb-4">
                 {interests.map((interest, idx) => {
                   const isSelected = selectedInterests.includes(interest.value);
                   const colorClass = interestColors[idx % interestColors.length];
@@ -435,7 +523,7 @@ export default function OnboardingPage() {
               </div>
             </div>
 
-            <div className="flex gap-2 mt-4">
+            <div className="flex gap-2 mt-4 flex-shrink-0">
               <button
                 onClick={() => setStep("location")}
                 className="flex-1 py-3 rounded-xl bg-white text-[#1a1a1a] font-black hard-border tap-target hover:-translate-y-0.5 transition-all text-sm"
@@ -465,7 +553,7 @@ export default function OnboardingPage() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="flex flex-col items-center justify-center min-h-screen px-5"
+            className="flex flex-col items-center justify-center flex-1 px-5 overflow-y-auto"
           >
             <motion.div
               initial={{ scale: 0 }}

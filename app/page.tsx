@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { GameController01Icon, FlashIcon, Clock01Icon, Location01Icon, User02Icon, ArrowRight01Icon } from "@hugeicons/core-free-icons";
+import { Dices, Zap, Clock, MapPin, User, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import type { Mood, UserPreferences } from "@/lib/types";
@@ -86,7 +85,7 @@ export default function HomePage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-[#ff6b9d] hard-border hard-shadow flex items-center justify-center">
-              <HugeiconsIcon icon={FlashIcon} className="w-5 h-5" color="white" />
+              <Zap className="w-5 h-5 text-white" />
             </div>
             <div>
               <h1 className="text-lg font-black text-[#1a1a1a] tracking-tight">VibeQuest</h1>
@@ -95,9 +94,9 @@ export default function HomePage() {
                   onClick={() => router.push("/settings")}
                   className="flex items-center gap-1 text-xs font-medium text-[#666] hover:text-[#1a1a1a] transition-colors"
                 >
-                  <HugeiconsIcon icon={Location01Icon} className="w-3 h-3" color="#666" />
+                  <MapPin className="w-3 h-3" />
                   <span>{preferences.location.city}</span>
-                  <HugeiconsIcon icon={ArrowRight01Icon} className="w-3 h-3" color="#666" />
+                  <ChevronRight className="w-3 h-3" />
                 </button>
               )}
             </div>
@@ -107,7 +106,7 @@ export default function HomePage() {
             className="w-9 h-9 rounded-lg bg-white hard-border hard-shadow-sm flex items-center justify-center text-[#1a1a1a] tap-target hover:-translate-y-0.5 transition-all"
             aria-label="Profile"
           >
-            <HugeiconsIcon icon={User02Icon} className="w-4 h-4" color="#1a1a1a" />
+            <User className="w-4 h-4" />
           </button>
         </div>
       </header>
@@ -266,7 +265,7 @@ export default function HomePage() {
                   : "bg-[#e5e5e5] text-[#999] border-[#ccc] cursor-not-allowed shadow-none"
               )}
             >
-              <HugeiconsIcon icon={GameController01Icon} className="w-5 h-5" color="white" />
+              <Dices className="w-5 h-5" />
               {ctaText}
             </motion.button>
           )}

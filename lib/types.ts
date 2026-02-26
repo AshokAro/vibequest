@@ -169,6 +169,20 @@ export type NicheInterest =
   | "manhole_covers"
   | "typos";
 
+// Interest categories (used in onboarding/settings)
+export type InterestCategory =
+  | "creative"
+  | "music_sound"
+  | "movement_body"
+  | "food_drink"
+  | "culture_knowledge"
+  | "nature_outdoors"
+  | "people_social"
+  | "mind_curiosity"
+  | "collecting_hunting"
+  | "niche_unexpected";
+
+// Specific interests (used in mission generation)
 export type Interest =
   | CreativeInterest
   | MusicInterest
@@ -179,7 +193,8 @@ export type Interest =
   | SocialInterest
   | MindInterest
   | CollectingInterest
-  | NicheInterest;
+  | NicheInterest
+  | InterestCategory;
 
 export interface UserPreferences {
   hasCompletedOnboarding: boolean;

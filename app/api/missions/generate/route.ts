@@ -714,7 +714,6 @@ function parseAIResponse(content: string, request: MissionRequest): Mission[] {
       effort: { physical: physicalLevel, mental: mentalLevel },
       location: { type: "nearby", suggestion: request.location?.city || "Local area" },
       intrinsic_rewards: intrinsicRewards,
-      xp_reward: 0,
     });
     const wildcardBonus = isWildcard ? Math.max(25, Math.floor(baseXP * 0.25)) : 0;
 
@@ -805,7 +804,6 @@ function generateMockMissions(request: MissionRequest): Mission[] {
       effort: template.effort,
       location: template.location,
       intrinsic_rewards: template.rewards,
-      xp_reward: 0,
     });
 
     const mission: Omit<Mission, "xp_reward"> = {

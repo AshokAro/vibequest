@@ -22,6 +22,7 @@ export interface Mission {
     discipline: number;
   };
   xp_reward: number;
+  icon?: string;
 }
 
 export interface UserProfile {

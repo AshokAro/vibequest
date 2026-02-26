@@ -599,45 +599,45 @@ function parseAIResponse(content: string, request: MissionRequest): Mission[] {
   });
 }
 
-// Fallback mock generator for when AI fails
+// Add source flag to mock missions for debugging
 function generateMockMissions(request: MissionRequest): Mission[] {
   const city = request.location?.city || "your city";
   const templates = [
     {
-      title: `Photo Walk in ${city} Streets`,
-      description: `Explore the authentic streets of ${city} and capture 5 interesting photos of local life.`,
+      title: `[MOCK] Photo Walk in ${city} Streets`,
+      description: `[AI FAILED - FALLBACK] Explore the authentic streets of ${city} and capture 5 interesting photos of local life.`,
       steps: ["Grab your phone", "Walk around your area", "Find subjects that speak to you", "Take 5 thoughtful photos"],
       effort: { physical: 2, mental: 2 },
       location: { type: "nearby" as const, suggestion: `Main streets and alleys of ${city}` },
       rewards: { fitness: 5, calm: 10, creativity: 20, social: 0, knowledge: 0, discipline: 5 },
     },
     {
-      title: "Coffee & Conversations",
-      description: "Visit a local coffee spot and practice mindful observation or strike up a conversation.",
+      title: `[MOCK] Coffee & Conversations`,
+      description: `[AI FAILED - FALLBACK] Visit a local coffee spot and practice mindful observation or strike up a conversation.`,
       steps: ["Find a busy coffee shop nearby", "Order something new", "Observe or chat with someone", "Enjoy the moment"],
       effort: { physical: 1, mental: 3 },
       location: { type: "nearby" as const, suggestion: `Popular cafe in ${city}` },
       rewards: { fitness: 0, calm: 5, creativity: 0, social: 25, knowledge: 5, discipline: 10 },
     },
     {
-      title: "Park Bench Meditation",
-      description: `Find a peaceful spot in ${city} and practice mindfulness for 15 minutes.`,
+      title: `[MOCK] Park Bench Meditation`,
+      description: `[AI FAILED - FALLBACK] Find a peaceful spot in ${city} and practice mindfulness for 15 minutes.`,
       steps: ["Walk to a nearby park", "Find a comfortable bench", "Close your eyes and breathe", "Observe your surroundings"],
       effort: { physical: 1, mental: 2 },
       location: { type: "nearby" as const, suggestion: `Nearest park in ${city}` },
       rewards: { fitness: 0, calm: 25, creativity: 5, social: 0, knowledge: 0, discipline: 15 },
     },
     {
-      title: "Local Landmark Visit",
-      description: `Visit a notable landmark or point of interest in ${city} and learn something new about it.`,
+      title: `[MOCK] Local Landmark Visit`,
+      description: `[AI FAILED - FALLBACK] Visit a notable landmark or point of interest in ${city} and learn something new about it.`,
       steps: ["Research a nearby landmark", "Walk or travel there", "Observe details carefully", "Take a photo or make notes"],
       effort: { physical: 3, mental: 3 },
       location: { type: "nearby" as const, suggestion: `Historic or cultural spot in ${city}` },
       rewards: { fitness: 10, calm: 5, creativity: 5, social: 0, knowledge: 20, discipline: 10 },
     },
     {
-      title: "Street Food Discovery",
-      description: `Find and try a local snack or street food specialty in ${city}.`,
+      title: `[MOCK] Street Food Discovery`,
+      description: `[AI FAILED - FALLBACK] Find and try a local snack or street food specialty in ${city}.`,
       steps: ["Walk to a busy food area", "Pick something you've never tried", "Savor it mindfully", "Chat with the vendor"],
       effort: { physical: 2, mental: 1 },
       location: { type: "nearby" as const, suggestion: `Popular food street in ${city}` },
@@ -664,6 +664,7 @@ function generateMockMissions(request: MissionRequest): Mission[] {
     };
   });
 }
+
 
 export async function POST(request: NextRequest) {
   try {

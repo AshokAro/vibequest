@@ -24,54 +24,44 @@ const CITY_LANDMARKS: Record<string, string[]> = {
   "chennai": ["Marina Beach", "Besant Nagar Beach", "T Nagar", "Pondy Bazaar", "Mylapore Temple", "Kapaleeshwarar Temple"],
 };
 
-// Interest to location type mapping
+// Interest category to location type mapping (for onboarding categories)
+const INTEREST_CATEGORY_MAP: Record<string, string[]> = {
+  "creative": ["street", "neighborhood", "heritage building", "park"],
+  "music_sound": ["cultural center", "market area", "public space"],
+  "movement_body": ["park", "running track", "open ground", "garden"],
+  "food_drink": ["street food market", "local food area", "cafe area"],
+  "culture_knowledge": ["heritage building", "old neighborhood", "monument", "museum"],
+  "nature_outdoors": ["park", "lake", "botanical garden", "green space"],
+  "people_social": ["busy market", "public square", "park", "community space"],
+  "mind_curiosity": ["old neighborhood", "lane", "street", "library area"],
+  "collecting_hunting": ["market", "bazaar", "flea market", "thrift store area"],
+  "niche_unexpected": ["street", "old neighborhood", "heritage area", "downtown"],
+};
+
+// Specific interest to location type mapping
 const INTEREST_LOCATION_MAP: Record<string, string[]> = {
   // Creative
   "photography": ["street", "neighborhood", "market area"],
-  "street_art": ["street", "neighborhood", "market area"],
-  "decay_texture": ["street", "neighborhood", "old area"],
-  "doors_windows": ["street", "neighborhood", "heritage area"],
   "sketching": ["park", "garden", "heritage building"],
-  "drawing": ["park", "garden", "heritage building"],
   "painting": ["park", "garden", "heritage building"],
-  "watercolor": ["park", "garden", "lake"],
+  "street_art": ["street", "neighborhood", "market area"],
   // Food
   "street_food": ["street food market", "local food area", "food street"],
-  "food": ["street food market", "local cafe", "food market"],
-  "tea": ["tea stall area", "local cafe"],
-  "coffee": ["coffee shop area", "local cafe"],
   "cafe_hopping": ["cafe area", "coffee shop street"],
   // Movement
   "running": ["park", "running track", "open ground"],
-  "jogging": ["park", "running track", "open ground"],
-  "cycling": ["park", "cycling track", "open road"],
-  "fitness": ["park", "open ground", "fitness area"],
   "yoga": ["park", "garden", "quiet open space"],
-  "strength_training": ["park", "outdoor gym", "open ground"],
   // Culture
   "history": ["heritage building", "old neighborhood", "monument"],
-  "heritage": ["heritage building", "old neighborhood", "monument"],
-  "architecture": ["heritage building", "old neighborhood", "architectural area"],
   "museums": ["museum", "gallery", "cultural center"],
   // Nature
-  "nature": ["park", "lake", "botanical garden"],
   "birdwatching": ["park", "lake", "bird sanctuary"],
-  "botany": ["park", "botanical garden", "green space"],
   "parks": ["park", "garden", "green space"],
   // Markets
-  "markets": ["market", "bazaar", "shopping area"],
-  "bazaars": ["bazaar", "market", "traditional market"],
-  "thrift": ["thrift store area", "secondhand market"],
-  "flea_markets": ["flea market", "weekend market"],
-  // Music
-  "music": ["cultural center", "music venue", "live music area"],
-  "live_music": ["live music venue", "cultural center"],
+  "markets_bazaars": ["market", "bazaar", "shopping area"],
+  "thrift_shopping": ["thrift store area", "secondhand market"],
   // Social
   "people_watching": ["busy market", "public square", "park"],
-  "talking_strangers": ["busy market", "public square", "community space"],
-  // Exploration
-  "puzzles": ["old neighborhood", "lane", "street"],
-  "urban_exploration": ["old neighborhood", "heritage area", "lane"],
 };
 
 // XP calculation formula
@@ -91,12 +81,19 @@ function generateLocationQueries(request: MissionRequest): string[] {
   const city = request.location?.city || "";
   const locationTypes: string[] = [];
 
-  // Map interests to location types
+  // Map interests to location types (try category first, then specific)
   for (const interest of interests) {
     const normalizedInterest = interest.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z_]/g, "");
-    const types = INTEREST_LOCATION_MAP[normalizedInterest] || INTEREST_LOCATION_MAP[interest.toLowerCase()];
-    if (types) {
-      locationTypes.push(...types);
+    // Try category mapping first
+    const categoryTypes = INTEREST_CATEGORY_MAP[normalizedInterest] || INTEREST_CATEGORY_MAP[interest.toLowerCase()];
+    if (categoryTypes) {
+      locationTypes.push(...categoryTypes);
+    } else {
+      // Fall back to specific interest mapping
+      const specificTypes = INTEREST_LOCATION_MAP[normalizedInterest] || INTEREST_LOCATION_MAP[interest.toLowerCase()];
+      if (specificTypes) {
+        locationTypes.push(...specificTypes);
+      }
     }
   }
 

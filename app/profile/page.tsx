@@ -136,7 +136,7 @@ export default function ProfilePage() {
   const [user] = useState<UserProfile>(mockUser);
 
   return (
-    <main className="min-h-screen safe-top safe-x bg-[#fafafa] pb-24">
+    <main className="h-full safe-top safe-x bg-[#fafafa] pb-24 overflow-y-auto">
       {/* Header */}
       <header className="px-5 pt-5 pb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">

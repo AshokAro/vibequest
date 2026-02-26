@@ -94,9 +94,9 @@ export function MobileFrame({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Mobile: Full Screen */}
-      <div className="md:hidden w-full h-screen overflow-hidden flex flex-col bg-[#fafafa]">
+      <div className="md:hidden w-full h-[100dvh] overflow-hidden flex flex-col bg-[#fafafa]">
         {/* Scrollable content area */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden no-scrollbar">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden no-scrollbar min-h-0">
           {children}
         </div>
         {/* Fixed nav at bottom */}

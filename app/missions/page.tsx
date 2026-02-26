@@ -328,7 +328,7 @@ export default function MissionsPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen flex items-center justify-center safe-top safe-x bg-[#fafafa]">
+      <main className="h-full flex items-center justify-center safe-top safe-x bg-[#fafafa]">
         <div className="text-center">
           <div className="w-14 h-14 bg-[#c084fc] hard-border hard-shadow rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse">
             <RefreshCw className="w-7 h-7 text-white animate-spin" />
@@ -351,7 +351,7 @@ export default function MissionsPage() {
   }
 
   return (
-    <main className="h-screen safe-top safe-x bg-[#fafafa] flex flex-col overflow-hidden">
+    <main className="h-full safe-top safe-x bg-[#fafafa] flex flex-col overflow-hidden">
       {/* Header */}
       <header className="px-5 pt-5 pb-3 flex-shrink-0">
         <h1 className="text-2xl font-black text-[#1a1a1a] tracking-tight">Pick One</h1>

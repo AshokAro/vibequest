@@ -83,7 +83,7 @@ export default function ActiveMissionPage() {
 
   if (!mission) {
     return (
-      <main className="min-h-screen flex items-center justify-center bg-[#fafafa]">
+      <main className="h-full flex items-center justify-center bg-[#fafafa]">
         <div className="w-8 h-8 border-2 border-[#ff6b9d] border-t-transparent rounded-full animate-spin" />
       </main>
     );
@@ -93,7 +93,7 @@ export default function ActiveMissionPage() {
   const allStepsCompleted = completedSteps.length === mission.steps.length;
 
   return (
-    <main className="min-h-screen safe-top safe-x bg-[#fafafa] pb-24">
+    <main className="h-full safe-top safe-x bg-[#fafafa] pb-24 overflow-y-auto">
       {/* Header */}
       <header className="px-5 pt-5 pb-3">
         <div className="flex items-center gap-2 text-[#666] mb-1">

@@ -169,7 +169,7 @@ export default function OnboardingPage() {
   const canComplete = selectedInterests.length >= 2;
 
   return (
-    <main className="min-h-screen safe-top safe-x bg-[#fafafa]">
+    <main className="h-full safe-top safe-x bg-[#fafafa] overflow-y-auto">
       {/* Progress Bar */}
       <div className="fixed top-0 left-0 right-0 h-1.5 bg-[#e5e5e5]">
         <motion.div

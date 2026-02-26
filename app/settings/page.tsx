@@ -182,7 +182,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <main className="min-h-screen safe-top safe-x bg-[#fafafa]">
+    <main className="h-full safe-top safe-x bg-[#fafafa] overflow-y-auto">
       {/* Header */}
       <header className="px-5 pt-4 pb-3 flex items-center justify-between">
         <button

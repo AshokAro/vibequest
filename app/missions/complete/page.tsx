@@ -149,7 +149,7 @@ export default function MissionCompletePage() {
 
   if (!completion) {
     return (
-      <main className="min-h-screen flex items-center justify-center bg-[#fafafa]">
+      <main className="h-full flex items-center justify-center bg-[#fafafa]">
         <div className="w-8 h-8 border-2 border-[#ff6b9d] border-t-transparent rounded-full animate-spin" />
       </main>
     );
@@ -158,7 +158,7 @@ export default function MissionCompletePage() {
   const rewards = completion.mission?.intrinsic_rewards;
 
   return (
-    <main className="min-h-screen safe-top safe-x flex flex-col items-center justify-center px-5 py-6 bg-[#fafafa] relative overflow-hidden">
+    <main className="h-full safe-top safe-x flex flex-col items-center justify-center px-5 py-6 bg-[#fafafa] relative overflow-hidden">
       <Confetti />
 
       {/* Success Icon */}

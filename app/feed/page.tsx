@@ -204,7 +204,7 @@ export default function FeedPage() {
   };
 
   return (
-    <main className="min-h-screen safe-top safe-x pb-24 bg-[#fafafa]">
+    <main className="h-full safe-top safe-x pb-24 bg-[#fafafa] overflow-y-auto">
       {/* Header */}
       <header className="px-5 pt-5 pb-3">
         <div className="flex items-center gap-2 mb-1">

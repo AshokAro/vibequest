@@ -78,7 +78,7 @@ export default function HomePage() {
   const canRoll = selectedMood !== null && !isLoading;
 
   return (
-    <main className="min-h-full bg-[#fafafa] flex flex-col">
+    <main className="h-full bg-[#fafafa] flex flex-col overflow-hidden">
       {/* Header */}
       <header className="px-5 pt-4 pb-4 flex-shrink-0">
         <div className="flex items-center justify-between">
@@ -110,7 +110,7 @@ export default function HomePage() {
       </header>
 
       {/* Main Content */}
-      <div className="flex-1 px-5 space-y-4 pt-2 pb-4">
+      <div className="flex-1 px-5 space-y-3 pt-2 pb-4 overflow-y-auto min-h-0">
         {/* Greeting */}
         <section>
           <h2 className="text-2xl font-black text-[#1a1a1a] leading-tight tracking-tight">

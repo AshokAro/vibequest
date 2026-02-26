@@ -101,12 +101,14 @@
   * {
     @apply border-border outline-ring/50;
   }
-  html {
+  html, body, #__next {
+    height: 100%;
     font-family: var(--font-funnel), system-ui, sans-serif;
   }
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-funnel), system-ui, sans-serif;
+    overscroll-behavior-y: none;
   }
 }
 

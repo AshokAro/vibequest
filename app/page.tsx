@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Dices, Zap, Clock, MapPin, User } from "lucide-react";
+import { Dices, Zap, Clock, MapPin, User, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import type { Mood, UserPreferences } from "@/lib/types";
@@ -96,6 +96,7 @@ export default function HomePage() {
                 >
                   <MapPin className="w-3 h-3" />
                   <span>{preferences.location.city}</span>
+                  <ChevronRight className="w-3 h-3" />
                 </button>
               )}
             </div>

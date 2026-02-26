@@ -1,11 +1,37 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Settings, Trophy, Target, Flame, Zap, User, ArrowLeft } from "lucide-react";
+import { Settings, Trophy, Target, Flame, Zap, User, ArrowLeft, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { UserProfile } from "@/lib/types";
+import type { UserProfile, UserPreferences, Interest } from "@/lib/types";
+
+const interestLabels: Record<string, string> = {
+  creative: "Creative",
+  music_sound: "Music",
+  movement_body: "Movement",
+  food_drink: "Food",
+  culture_knowledge: "Culture",
+  nature_outdoors: "Nature",
+  people_social: "Social",
+  mind_curiosity: "Mind",
+  collecting_hunting: "Collecting",
+  niche_unexpected: "Niche",
+};
+
+const interestColors: Record<string, string> = {
+  creative: "bg-[#ff6b9d]",
+  music_sound: "bg-[#c084fc]",
+  movement_body: "bg-[#fbbf24]",
+  food_drink: "bg-[#22d3ee]",
+  culture_knowledge: "bg-[#a3e635]",
+  nature_outdoors: "bg-[#fb7185]",
+  people_social: "bg-[#a78bfa]",
+  mind_curiosity: "bg-[#f472b6]",
+  collecting_hunting: "bg-[#60a5fa]",
+  niche_unexpected: "bg-[#34d399]",
+};
 
 // Mock user data - in production, fetch from API
 const mockUser: UserProfile = {
@@ -135,7 +161,15 @@ const statColors = {
 
 export default function ProfilePage() {
   const [user] = useState<UserProfile>(mockUser);
+  const [preferences, setPreferences] = useState<UserPreferences | null>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    const stored = localStorage.getItem("vibequest_preferences");
+    if (stored) {
+      setPreferences(JSON.parse(stored));
+    }
+  }, []);
 
   return (
     <main className="h-full safe-top safe-x bg-[#fafafa] pb-6 overflow-y-auto">
@@ -179,6 +213,40 @@ export default function ProfilePage() {
             </div>
           </div>
         </section>
+
+        {/* Interests Rail */}
+        {preferences?.interests && preferences.interests.length > 0 && (
+          <section>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-md bg-[#ff6b9d] hard-border flex items-center justify-center">
+                  <span className="text-[10px]">💖</span>
+                </div>
+                <h2 className="text-xs font-black text-[#1a1a1a] uppercase tracking-wider">Your Vibes</h2>
+              </div>
+              <button
+                onClick={() => router.push("/settings")}
+                className="flex items-center gap-1 text-xs font-bold text-[#666] hover:text-[#1a1a1a] transition-colors tap-target"
+              >
+                <Pencil className="w-3 h-3" />
+                Edit
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {preferences.interests.map((interest) => (
+                <span
+                  key={interest}
+                  className={cn(
+                    "px-3 py-1.5 rounded-full text-xs font-bold text-white hard-border hard-shadow-sm",
+                    interestColors[interest] || "bg-[#999]"
+                  )}
+                >
+                  {interestLabels[interest] || interest}
+                </span>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Stats Overview */}
         <section>

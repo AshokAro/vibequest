@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Settings, Trophy, Target, Flame, Zap, User, ChevronRight } from "lucide-react";
+import { Settings, Trophy, Target, Flame, Zap, User, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { UserProfile } from "@/lib/types";
 
@@ -142,11 +142,22 @@ export default function ProfilePage() {
       {/* Header */}
       <header className="px-5 pt-5 pb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-lg bg-[#ff6b9d] hard-border hard-shadow flex items-center justify-center">
-            <User className="w-4 h-4 text-white" />
-          </div>
+          <button
+            onClick={() => router.push("/")}
+            className="w-9 h-9 rounded-lg bg-white hard-border hard-shadow-sm flex items-center justify-center text-[#1a1a1a] tap-target hover:-translate-y-0.5 transition-all"
+            aria-label="Back to Quests"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </button>
           <h1 className="text-lg font-black text-[#1a1a1a] tracking-tight">Profile</h1>
         </div>
+        <button
+          onClick={() => router.push("/settings")}
+          className="w-9 h-9 rounded-lg bg-white hard-border hard-shadow-sm flex items-center justify-center text-[#1a1a1a] tap-target hover:-translate-y-0.5 transition-all"
+          aria-label="Settings"
+        >
+          <Settings className="w-4 h-4" />
+        </button>
       </header>
 
       <div className="px-5 space-y-6">
@@ -214,20 +225,6 @@ export default function ProfilePage() {
             </div>
           </div>
         </section>
-
-        {/* Settings Button */}
-        <button
-          onClick={() => router.push("/settings")}
-          className="w-full flex items-center justify-between p-4 bg-white hard-border rounded-xl hard-shadow tap-target hover:-translate-y-0.5 transition-all"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-[#e5e5e5] flex items-center justify-center">
-              <Settings className="w-4 h-4 text-[#1a1a1a]" />
-            </div>
-            <span className="text-sm font-black text-[#1a1a1a]">Settings</span>
-          </div>
-          <ChevronRight className="w-4 h-4 text-[#666]" />
-        </button>
 
         {/* Dev: Feed Link */}
         <div className="pt-4 border-t border-[#e5e5e5]">

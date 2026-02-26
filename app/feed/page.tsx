@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Heart, MessageCircle, Dices, Users } from "lucide-react";
+import { Heart, MessageCircle, Dices, Users, ArrowLeft } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import type { FeedItem } from "@/lib/types";
 
@@ -146,6 +147,7 @@ function FeedCard({
 }
 
 export default function FeedPage() {
+  const router = useRouter();
   const [items, setItems] = useState<FeedItem[]>(mockFeedItems);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
@@ -204,13 +206,17 @@ export default function FeedPage() {
   };
 
   return (
-    <main className="h-full safe-top safe-x pb-24 bg-[#fafafa] overflow-y-auto">
+    <main className="h-full safe-top safe-x pb-6 bg-[#fafafa] overflow-y-auto">
       {/* Header */}
-      <header className="px-5 pt-5 pb-3">
-        <div className="flex items-center gap-2 mb-1">
-          <div className="w-9 h-9 rounded-lg bg-[#c084fc] hard-border hard-shadow flex items-center justify-center">
-            <Users className="w-4 h-4 text-white" />
-          </div>
+      <header className="px-5 pt-5 pb-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => router.push("/profile")}
+            className="w-9 h-9 rounded-lg bg-white hard-border hard-shadow-sm flex items-center justify-center text-[#1a1a1a] tap-target hover:-translate-y-0.5 transition-all"
+            aria-label="Back to Profile"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </button>
           <div>
             <h1 className="text-lg font-black text-[#1a1a1a] tracking-tight">Community Vibes</h1>
             <p className="text-xs font-medium text-[#666]">See what others are exploring</p>

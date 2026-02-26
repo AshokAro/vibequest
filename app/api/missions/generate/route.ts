@@ -13,6 +13,36 @@ const CHAIN_KEYWORDS = [
   "ikea", "decathlon", "big bazaar", "reliance", "tata", "birla"
 ];
 
+// Allowed place types for missions - filter out residential/lodging
+const ALLOWED_PLACE_TYPES = [
+  "park", "tourist_attraction", "museum", "art_gallery", "shopping_mall",
+  "store", "restaurant", "cafe", "library", "book_store", "bakery",
+  "food", "supermarket", "jewelry_store", "clothing_store", "shoe_store",
+  "electronics_store", "hardware_store", "furniture_store", "home_goods_store",
+  "bicycle_store", "pet_store", "florist", "department_store", "pharmacy",
+  "bowling_alley", "movie_theater", "amusement_park", "aquarium", "zoo",
+  "campground", "rv_park", "night_club", "bar", "casino", "stadium",
+  "gym", "spa", "beauty_salon", "hair_care", "movie_rental", "meal_delivery",
+  "meal_takeaway", "convenience_store", "liquor_store", "laundry", "parking",
+  "gas_station", "car_repair", "car_wash", "transit_station", "train_station",
+  "subway_station", "bus_station", "taxi_stand", "church", "hindu_temple",
+  "mosque", "synagogue", "cemetery", "place_of_worship", "city_hall",
+  "courthouse", "embassy", "fire_station", "local_government_office",
+  "police", "post_office", "university", "school", "secondary_school",
+  "primary_school", "hospital", "doctor", "dentist", "physiotherapist",
+  "veterinary_care", "atm", "bank", "real_estate_agency", "travel_agency",
+  "insurance_agency", "lawyer", "accounting", "finance", "plumber",
+  "electrician", "roofing_contractor", "general_contractor", "moving_company",
+  "storage", "funeral_home", "locksmith", "painter", "car_dealer"
+];
+
+// Place types to explicitly exclude (residential, lodging, private)
+const EXCLUDED_PLACE_TYPES = [
+  "lodging", "apartment", "guesthouse", "housing", "real_estate", "room",
+  "rv_park_lodging", "hostel", "hotel", "motel", "resort", "vacation_rental",
+  "private_residence", "residential", "house", "condo", "townhouse"
+];
+
 // City landmarks for fallback
 const CITY_LANDMARKS: Record<string, string[]> = {
   "bangalore": ["Cubbon Park", "Lalbagh Botanical Garden", "MG Road", "Commercial Street", "Brigade Road", "Koramangala", "Indiranagar 100 Feet Road", "Church Street"],
@@ -129,6 +159,41 @@ function isChain(placeName: string): boolean {
   return CHAIN_KEYWORDS.some(chain => lowerName.includes(chain));
 }
 
+// Check if place has an allowed type (not residential/lodging)
+function hasAllowedPlaceType(place: Record<string, unknown>): boolean {
+  const types = place.types as string[] | undefined;
+  if (!types || !Array.isArray(types)) {
+    // If no types, check the name for excluded keywords
+    const name = String(place.name || "").toLowerCase();
+    const isExcludedName = EXCLUDED_PLACE_TYPES.some(type =>
+      name.includes(type) || name.includes("apartment") || name.includes("guesthouse")
+    );
+    return !isExcludedName;
+  }
+
+  // Check if any type is explicitly excluded
+  const hasExcludedType = types.some(type =>
+    EXCLUDED_PLACE_TYPES.includes(type)
+  );
+  if (hasExcludedType) return false;
+
+  // Check if any type is in our allowed list
+  const hasAllowedType = types.some(type =>
+    ALLOWED_PLACE_TYPES.includes(type)
+  );
+
+  // If it has an allowed type, it's good
+  if (hasAllowedType) return true;
+
+  // If no specific allowed type but also no excluded types, accept it
+  // This handles places with generic types like "establishment", "point_of_interest"
+  const hasGenericType = types.some(type =>
+    ["establishment", "point_of_interest"].includes(type)
+  );
+
+  return hasGenericType;
+}
+
 // Get fallback landmark for city
 function getFallbackLandmark(city: string): { name: string; address: string; rating?: number } | null {
   const normalizedCity = city.toLowerCase();
@@ -187,6 +252,12 @@ async function searchVerifiedLocations(
 
             // Skip closed places if we know they're closed
             if (openNow === false) continue;
+
+            // Skip apartments, guesthouses, and other residential places
+            if (!hasAllowedPlaceType(place)) {
+              console.log(`[API] Skipping excluded place type: ${name} (types: ${JSON.stringify(place.types)})`);
+              continue;
+            }
 
             // This place passes all filters
             results.push({

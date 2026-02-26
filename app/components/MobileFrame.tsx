@@ -58,7 +58,7 @@ export function MobileFrame({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#e5e5e5] flex items-center justify-center p-4 md:p-8">
+    <div className="min-h-screen md:bg-[#e5e5e5] md:flex md:items-center md:justify-center md:p-4 md:p-8">
       {/* Desktop: Phone Frame */}
       <div className="hidden md:block" data-phone-frame="true">
         <div className="relative">
@@ -93,8 +93,8 @@ export function MobileFrame({ children }: { children: React.ReactNode }) {
         </div>
       </div>
 
-      {/* Mobile: Full Screen */}
-      <div className="md:hidden w-full h-[100dvh] overflow-hidden flex flex-col bg-[#fafafa]">
+      {/* Mobile: Full Screen - No grey container */}
+      <div className="md:hidden fixed inset-0 w-full h-[100dvh] overflow-hidden flex flex-col bg-[#fafafa]">
         {/* Scrollable content area */}
         <div className="flex-1 overflow-y-auto overflow-x-hidden no-scrollbar min-h-0">
           {children}

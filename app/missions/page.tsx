@@ -364,7 +364,7 @@ export default function MissionsPage() {
   }
 
   return (
-    <main className="h-full safe-top safe-x bg-[#fafafa] flex flex-col overflow-hidden">
+    <main className="h-full safe-top safe-x bg-[#fafafa] flex flex-col overflow-hidden touch-none">
       {/* Header */}
       <header className="px-5 pt-5 pb-3 flex-shrink-0">
         <h1 className="text-2xl font-black text-[#1a1a1a] tracking-tight">Pick One</h1>
@@ -373,7 +373,7 @@ export default function MissionsPage() {
         </p>
       </header>
 
-      {/* Card Stack */}
+      {/* Card Stack - Fixed height container */}
       <div className="relative px-5 mt-2 flex-1" style={{ minHeight: 0 }}>
         <AnimatePresence>
           {missions.slice(currentIndex, currentIndex + 3).map((mission, idx) => (
@@ -402,7 +402,7 @@ export default function MissionsPage() {
         )}
       </div>
 
-      {/* Action Buttons */}
+      {/* Action Buttons - Fixed at bottom */}
       <div className="flex items-center justify-center gap-4 py-4 flex-shrink-0">
         <button
           onClick={handleDiscard}

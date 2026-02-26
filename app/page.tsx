@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import type { Mood, UserPreferences } from "@/lib/types";
 import { useTapFeedback } from "./hooks/useTapFeedback";
+import { DraggableSlider } from "./components/DraggableSlider";
 
 // Gumroad-style pop colors
 const moods: { value: Mood; label: string; emoji: string; bg: string }[] = [
@@ -129,33 +130,21 @@ export default function HomePage() {
             </span>
           </div>
 
-          <div className="relative">
-            <input
-              type="range"
-              min="5"
-              max="120"
-              step="5"
-              value={duration}
-              onChange={withTap((e) => setDuration(Number(e.target.value)), "light")}
-              className="w-full h-12 tap-target appearance-none bg-transparent cursor-pointer touch-none relative z-10"
-              style={{
-                WebkitAppearance: 'none',
-                background: 'transparent'
-              }}
-              aria-label="Duration slider"
-            />
-            <div className="absolute inset-0 h-12 rounded-xl overflow-hidden hard-border pointer-events-none">
-              <div className="absolute inset-0 bg-white" />
-              <div
-                className="absolute top-0 left-0 h-full bg-[#c084fc] transition-all duration-150"
-                style={{ width: `${((duration - 5) / 115) * 100}%` }}
-              />
-            </div>
-            <div className="absolute inset-0 h-12 flex items-center justify-between px-4 pointer-events-none">
-              <span className="text-xs font-bold text-[#1a1a1a] z-10">5m</span>
-              <span className="text-xs font-bold text-[#1a1a1a] z-10">60m</span>
-              <span className="text-xs font-bold text-[#1a1a1a] z-10">120m</span>
-            </div>
+          <DraggableSlider
+            value={duration}
+            min={5}
+            max={120}
+            step={5}
+            onChange={(val) => {
+              setDuration(val);
+              triggerHaptic("light");
+            }}
+            accentColor="#c084fc"
+          />
+          <div className="flex items-center justify-between px-1">
+            <span className="text-xs font-bold text-[#1a1a1a]">5m</span>
+            <span className="text-xs font-bold text-[#1a1a1a]">60m</span>
+            <span className="text-xs font-bold text-[#1a1a1a]">120m</span>
           </div>
         </section>
 
@@ -168,33 +157,21 @@ export default function HomePage() {
             </span>
           </div>
 
-          <div className="relative">
-            <input
-              type="range"
-              min="0"
-              max="2500"
-              step="250"
-              value={budget}
-              onChange={withTap((e) => setBudget(Number(e.target.value)), "light")}
-              className="w-full h-12 tap-target appearance-none bg-transparent cursor-pointer touch-none relative z-10"
-              style={{
-                WebkitAppearance: 'none',
-                background: 'transparent'
-              }}
-              aria-label="Budget slider"
-            />
-            <div className="absolute inset-0 h-12 rounded-xl overflow-hidden hard-border pointer-events-none">
-              <div className="absolute inset-0 bg-white" />
-              <div
-                className="absolute top-0 left-0 h-full bg-[#22d3ee] transition-all duration-150"
-                style={{ width: `${(budget / 2500) * 100}%` }}
-              />
-            </div>
-            <div className="absolute inset-0 h-12 flex items-center justify-between px-4 pointer-events-none">
-              <span className="text-xs font-bold text-[#1a1a1a] z-10">Free</span>
-              <span className="text-xs font-bold text-[#1a1a1a] z-10">₹1250</span>
-              <span className="text-xs font-bold text-[#1a1a1a] z-10">₹2500</span>
-            </div>
+          <DraggableSlider
+            value={budget}
+            min={0}
+            max={2500}
+            step={250}
+            onChange={(val) => {
+              setBudget(val);
+              triggerHaptic("light");
+            }}
+            accentColor="#22d3ee"
+          />
+          <div className="flex items-center justify-between px-1">
+            <span className="text-xs font-bold text-[#1a1a1a]">Free</span>
+            <span className="text-xs font-bold text-[#1a1a1a]">₹1250</span>
+            <span className="text-xs font-bold text-[#1a1a1a]">₹2500</span>
           </div>
         </section>
 

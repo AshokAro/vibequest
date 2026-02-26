@@ -1,6 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { Mission, MissionRequest, Interest } from "@/lib/types";
 
+// Simple in-memory cache for server-side caching (per-deployment, not persistent)
+interface CachedPlace {
+  name: string;
+  address: string;
+  rating?: number;
+  timestamp: number;
+}
+
+const SERVER_CACHE = new Map<string, CachedPlace[]>();
+const SERVER_CACHE_TTL = 12 * 60 * 60 * 1000; // 12 hours
+
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
 const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
@@ -143,9 +154,11 @@ function generateLocationQueries(request: MissionRequest): string[] {
     uniqueTypes.push(...(moodDefaults[request.mood] || ["park", "market", "street"]));
   }
 
-  // Build 5 queries with city context
+  // Build 3 queries with city context (reduced from 5 for API efficiency)
+  // We still get great variety since the AI can work with any real location
   const queries: string[] = [];
-  for (let i = 0; i < 5; i++) {
+  const numQueries = Math.min(3, uniqueTypes.length);
+  for (let i = 0; i < numQueries; i++) {
     const type = uniqueTypes[i % uniqueTypes.length];
     queries.push(`${type} near ${city}`);
   }
@@ -208,7 +221,36 @@ function getFallbackLandmark(city: string): { name: string; address: string; rat
   return null;
 }
 
-// Step 2: Search Google Maps for verified locations
+// Helper: Get cache key for a city+query combination
+function getServerCacheKey(city: string, query: string): string {
+  return `${city.toLowerCase()}_${query.toLowerCase().replace(/\s+/g, "_")}`;
+}
+
+// Helper: Check server-side cache for a location
+function getFromServerCache(city: string, query: string): CachedPlace | null {
+  const key = getServerCacheKey(city, query);
+  const cached = SERVER_CACHE.get(key);
+
+  if (!cached) return null;
+
+  // Check if cache is expired
+  if (Date.now() - cached[0].timestamp > SERVER_CACHE_TTL) {
+    SERVER_CACHE.delete(key);
+    return null;
+  }
+
+  // Return random item from cached results for variety
+  const randomIndex = Math.floor(Math.random() * cached.length);
+  return cached[randomIndex];
+}
+
+// Helper: Save to server-side cache
+function saveToServerCache(city: string, query: string, places: CachedPlace[]): void {
+  const key = getServerCacheKey(city, query);
+  SERVER_CACHE.set(key, places);
+}
+
+// Step 2: Search Google Maps for verified locations (with caching)
 async function searchVerifiedLocations(
   queries: string[],
   lat: number,
@@ -217,68 +259,82 @@ async function searchVerifiedLocations(
 ): Promise<Array<{ name: string; address: string; rating?: number }>> {
   if (!GOOGLE_MAPS_API_KEY) {
     console.warn("Google Maps API key not configured");
-    // Return fallback landmarks
     return queries.map(() => getFallbackLandmark(city) || { name: city, address: city });
   }
 
   const results: Array<{ name: string; address: string; rating?: number }> = [];
+  const usedPlaceNames = new Set<string>(); // Track used places to avoid duplicates
 
   for (const query of queries) {
-    let locationFound = false;
-
-    // Try with 3000m radius first
-    for (const radius of [3000, 6000]) {
-      if (locationFound) break;
-
-      try {
-        const searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&location=${lat},${lng}&radius=${radius}&key=${GOOGLE_MAPS_API_KEY}`;
-
-        const response = await fetch(searchUrl);
-        const data = await response.json();
-
-        if (data.results && data.results.length > 0) {
-          // Find first result that passes filters
-          for (const place of data.results) {
-            const name = place.name || "";
-            const rating = place.rating || 0;
-            const userRatingsTotal = place.user_ratings_total || 0;
-            const openNow = place.opening_hours?.open_now;
-
-            // Skip chains
-            if (isChain(name)) continue;
-
-            // Skip places with no rating or few reviews
-            if (rating === 0 || userRatingsTotal < 10) continue;
-
-            // Skip closed places if we know they're closed
-            if (openNow === false) continue;
-
-            // Skip apartments, guesthouses, and other residential places
-            if (!hasAllowedPlaceType(place)) {
-              console.log(`[API] Skipping excluded place type: ${name} (types: ${JSON.stringify(place.types)})`);
-              continue;
-            }
-
-            // This place passes all filters
-            results.push({
-              name: name,
-              address: place.formatted_address || place.vicinity || "",
-              rating: rating,
-            });
-            locationFound = true;
-            break;
-          }
-        }
-      } catch (error) {
-        console.error(`Failed to search for "${query}" with radius ${radius}:`, error);
-      }
+    // Check server-side cache first
+    const cached = getFromServerCache(city, query);
+    if (cached && !usedPlaceNames.has(cached.name)) {
+      console.log(`[API] Server cache hit for: ${query}`);
+      results.push({
+        name: cached.name,
+        address: cached.address,
+        rating: cached.rating,
+      });
+      usedPlaceNames.add(cached.name);
+      continue;
     }
 
-    // If no location found, use fallback landmark
+    let locationFound = false;
+    const searchResults: CachedPlace[] = [];
+
+    // Use single 5000m radius instead of trying 3000m then 6000m
+    // This cuts API calls in half while still finding good locations
+    try {
+      const searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&location=${lat},${lng}&radius=5000&key=${GOOGLE_MAPS_API_KEY}`;
+
+      const response = await fetch(searchUrl);
+      const data = await response.json();
+
+      if (data.results && data.results.length > 0) {
+        // Collect all valid results for caching, not just the first one
+        for (const place of data.results) {
+          const name = place.name || "";
+          const rating = place.rating || 0;
+          const userRatingsTotal = place.user_ratings_total || 0;
+          const openNow = place.opening_hours?.open_now;
+
+          if (isChain(name)) continue;
+          if (rating === 0 || userRatingsTotal < 10) continue;
+          if (openNow === false) continue;
+          if (!hasAllowedPlaceType(place)) continue;
+
+          const result: CachedPlace = {
+            name: name,
+            address: place.formatted_address || place.vicinity || "",
+            rating: rating,
+            timestamp: Date.now(),
+          };
+
+          searchResults.push(result);
+
+          // Use the first valid result we find (if not already used)
+          if (!locationFound && !usedPlaceNames.has(name)) {
+            results.push(result);
+            usedPlaceNames.add(name);
+            locationFound = true;
+          }
+        }
+
+        // Cache all valid results for future use
+        if (searchResults.length > 0) {
+          saveToServerCache(city, query, searchResults);
+        }
+      }
+    } catch (error) {
+      console.error(`Failed to search for "${query}":`, error);
+    }
+
+    // If no location found from API, use fallback
     if (!locationFound) {
       const fallback = getFallbackLandmark(city);
-      if (fallback) {
+      if (fallback && !usedPlaceNames.has(fallback.name)) {
         results.push(fallback);
+        usedPlaceNames.add(fallback.name);
       } else {
         results.push({
           name: query.replace(/ near .+$/, ""),
@@ -792,6 +848,21 @@ export async function POST(request: NextRequest) {
       console.log("[API] OpenAI response length:", aiResponse.length);
       console.log("[API] OpenAI response preview:", aiResponse.substring(0, 500));
 
+      // Prepare locations to return for client-side caching
+      const locationsForCache = verifiedLocations.map(loc => ({
+        name: loc.name,
+        address: loc.address,
+        rating: loc.rating,
+        query: "", // Will be filled below
+      }));
+
+      // Associate each location with its query for better cache matching
+      locationQueries.forEach((query, idx) => {
+        if (locationsForCache[idx]) {
+          locationsForCache[idx].query = query;
+        }
+      });
+
       missions = parseAIResponse(aiResponse, body);
       console.log("[API] Parsed missions count:", missions.length);
 
@@ -799,13 +870,15 @@ export async function POST(request: NextRequest) {
       if (missions.length === 0) {
         throw new Error("No missions generated from AI response");
       }
+
+      // Return missions with locations for client-side caching
+      return NextResponse.json({ missions, locations: locationsForCache });
     } catch (aiError) {
       console.error("[API] AI generation failed:", aiError);
       console.log("[API] Falling back to mock missions");
       missions = generateMockMissions(body);
+      return NextResponse.json({ missions });
     }
-
-    return NextResponse.json({ missions });
   } catch (error) {
     console.error("[API] Mission generation error:", error);
     return NextResponse.json(

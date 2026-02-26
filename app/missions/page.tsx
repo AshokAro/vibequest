@@ -8,6 +8,7 @@ import { useSwipe } from "../hooks/useSwipe";
 import { useTapFeedback } from "../hooks/useTapFeedback";
 import { cn } from "@/lib/utils";
 import type { Mission, MissionRequest } from "@/lib/types";
+import { getCachedLocations, saveLocationsToCache, getLocationsForQueries, type CachedLocation } from "@/lib/locationCache";
 // @ts-ignore - types are in app/lib not root lib
 
 // Stat icon mapping
@@ -286,11 +287,17 @@ export default function MissionsPage() {
       const userPrefs = prefs ? JSON.parse(prefs) : null;
       console.log("[Frontend] User preferences:", userPrefs);
 
+      const city = userPrefs?.location?.city;
+      const cachedLocations = city ? getCachedLocations(city) : null;
+
+      // If we have cached locations, include them in the request
+      // The API will use them if available, reducing Google Maps calls
       const requestBody = {
         ...request,
         location: userPrefs?.location,
         interests: userPrefs?.interests,
         preferredMissionTypes: userPrefs?.preferredMissionTypes,
+        cachedLocations: cachedLocations || undefined,
       };
       console.log("[Frontend] Sending request body:", requestBody);
 
@@ -310,6 +317,12 @@ export default function MissionsPage() {
 
       const data = await response.json();
       console.log("[Frontend] Received missions:", data.missions?.length);
+
+      // Save returned locations to cache for future use
+      if (city && data.locations && data.locations.length > 0) {
+        saveLocationsToCache(city, data.locations);
+      }
+
       setMissions(data.missions);
       setCurrentIndex(0);
     } catch (error) {

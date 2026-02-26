@@ -54,6 +54,7 @@ export type Mood = "chill" | "adventurous" | "creative" | "social" | "focused" |
 
 export interface MissionRequest {
   duration: number;
+  budget: number;
   mood: Mood;
   energy: "low" | "medium" | "high";
   location?: UserPreferences["location"];

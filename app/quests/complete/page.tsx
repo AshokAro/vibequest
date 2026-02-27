@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { Sparkles, Share2, Home, RotateCcw } from "lucide-react";
+import { Sparkles, Share2, User, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTapFeedback } from "../../hooks/useTapFeedback";
 import { Button } from "../../components/Button";
@@ -310,13 +310,13 @@ export default function QuestCompletePage() {
 
         <div className="flex gap-2">
           <Button
-            onClick={() => router.push("/")}
+            onClick={() => router.push("/profile")}
             size="md"
             variant="secondary"
             className="flex-1 py-3"
           >
-            <Home className="w-4 h-4" />
-            Home
+            <User className="w-4 h-4" />
+            My Stats
           </Button>
           <Button
             onClick={() => router.push("/")}
@@ -325,7 +325,7 @@ export default function QuestCompletePage() {
             className="flex-1 py-3"
           >
             <RotateCcw className="w-4 h-4" />
-            New
+            Go Again
           </Button>
         </div>
       </motion.div>

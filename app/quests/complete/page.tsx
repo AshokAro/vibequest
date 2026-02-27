@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { Sparkles, Share2, User, RotateCcw } from "lucide-react";
+import { Sparkles, Share2, User, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTapFeedback } from "../../hooks/useTapFeedback";
 import { Button } from "../../components/Button";
@@ -132,9 +132,12 @@ const statColors: Record<string, string> = {
   discipline: "text-[#1a1a1a]",
 };
 
+// Rating type
+type Rating = "loved_it" | "good" | "meh" | null;
+
 export default function QuestCompletePage() {
   const router = useRouter();
-  const { withTap } = useTapFeedback();
+  const { withTap, triggerHaptic } = useTapFeedback();
   const [completion, setCompletion] = useState<{
     quest: Quest | null;
     duration: number;
@@ -142,6 +145,10 @@ export default function QuestCompletePage() {
     completedAt: string;
   } | null>(null);
   const [showConfetti, setShowConfetti] = useState(true);
+
+  // Feedback state - pre-selected defaults
+  const [actuallyCompleted, setActuallyCompleted] = useState(true);
+  const [rating, setRating] = useState<Rating>("good");
 
   const handleConfettiComplete = useCallback(() => {
     setShowConfetti(false);
@@ -221,6 +228,51 @@ export default function QuestCompletePage() {
     } else {
       await navigator.clipboard.writeText(`${shareData.text} ${shareData.url}`);
     }
+  };
+
+  const handleDone = () => {
+    triggerHaptic("success");
+
+    // Log completion feedback
+    if (completion?.quest) {
+      const feedbackData = {
+        quest_id: completion.quest.id,
+        quest_title: completion.quest.title,
+        interests_used: completion.quest.interests_used || [],
+        wildcard: completion.quest.is_wildcard || false,
+        completed_at: new Date().toISOString(),
+        actually_completed: actuallyCompleted,
+        rating: actuallyCompleted ? rating : null,
+      };
+
+      // Save to completion history for AI prompt analysis
+      const existingFeedback = localStorage.getItem("vibequest_completion_feedback");
+      const feedbackHistory = existingFeedback ? JSON.parse(existingFeedback) : [];
+      feedbackHistory.unshift(feedbackData);
+      // Keep last 100 entries
+      const trimmedFeedback = feedbackHistory.slice(0, 100);
+      localStorage.setItem("vibequest_completion_feedback", JSON.stringify(trimmedFeedback));
+
+      console.log("[QuestComplete] Feedback logged:", feedbackData);
+    }
+
+    // Navigate home
+    router.push("/");
+  };
+
+  const handleActuallyCompleted = (value: boolean) => {
+    triggerHaptic("light");
+    setActuallyCompleted(value);
+    if (!value) {
+      setRating(null);
+    } else if (rating === null) {
+      setRating("good");
+    }
+  };
+
+  const handleRating = (value: Rating) => {
+    triggerHaptic("light");
+    setRating(value);
   };
 
   if (!completion) {
@@ -312,6 +364,75 @@ export default function QuestCompletePage() {
         </motion.div>
       )}
 
+      {/* Feedback Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.55 }}
+        className="w-full max-w-[280px] space-y-4 mb-5"
+      >
+        {/* Did you do it? */}
+        <div className="space-y-2">
+          <span className="text-xs text-[#666] font-bold">Did you actually go?</span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => handleActuallyCompleted(true)}
+              className={cn(
+                "flex-1 py-2.5 px-3 rounded-xl border-2 font-bold text-sm transition-all duration-200 tap-target",
+                actuallyCompleted
+                  ? "bg-[#a3e635] border-[#1a1a1a] hard-shadow"
+                  : "bg-white border-[#e5e5e5] text-[#666]"
+              )}
+            >
+              Went and did it ✅
+            </button>
+            <button
+              onClick={() => handleActuallyCompleted(false)}
+              className={cn(
+                "flex-1 py-2.5 px-3 rounded-xl border-2 font-bold text-sm transition-all duration-200 tap-target",
+                !actuallyCompleted
+                  ? "bg-[#ff6b9d] border-[#1a1a1a] text-white hard-shadow"
+                  : "bg-white border-[#e5e5e5] text-[#666]"
+              )}
+            >
+              Not this time 👋
+            </button>
+          </div>
+        </div>
+
+        {/* How was it? - Only show if completed */}
+        {actuallyCompleted && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="space-y-2"
+          >
+            <span className="text-xs text-[#666] font-bold">How was it?</span>
+            <div className="flex gap-2">
+              {[
+                { emoji: "😐", value: "meh" as const },
+                { emoji: "🙂", value: "good" as const },
+                { emoji: "🤩", value: "loved_it" as const },
+              ].map(({ emoji, value }) => (
+                <button
+                  key={value}
+                  onClick={() => handleRating(value)}
+                  className={cn(
+                    "flex-1 py-3 rounded-xl border-2 text-2xl transition-all duration-200 tap-target",
+                    rating === value
+                      ? "bg-white border-[#1a1a1a] hard-shadow scale-105"
+                      : "bg-white border-[#e5e5e5] opacity-60"
+                  )}
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </motion.div>
+
       {/* Action Buttons */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
@@ -341,13 +462,13 @@ export default function QuestCompletePage() {
             My Stats
           </Button>
           <Button
-            onClick={() => router.push("/")}
+            onClick={handleDone}
             size="md"
             variant="primary"
-            className="flex-1 py-3"
+            className="flex-1 py-3 bg-[#ff6b9d]"
           >
-            <RotateCcw className="w-4 h-4" />
-            Go Again
+            <Check className="w-4 h-4" />
+            Done
           </Button>
         </div>
       </motion.div>

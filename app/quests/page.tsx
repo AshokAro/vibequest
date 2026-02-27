@@ -334,12 +334,17 @@ export default function QuestsPage() {
         VALID_INTERESTS.includes(i)
       );
 
+      // Get completion feedback history for AI prompt
+      const completionFeedback = localStorage.getItem("vibequest_completion_feedback");
+      const feedbackHistory = completionFeedback ? JSON.parse(completionFeedback) : [];
+
       const requestBody = {
         ...request,
         location: userPrefs?.location,
         interests: validInterests,
         preferredQuestTypes: userPrefs?.preferredQuestTypes,
         cachedLocations: cachedLocations || undefined,
+        completionFeedback: feedbackHistory.slice(0, 50), // Send last 50 entries
       };
       console.log("[Frontend] Sending request body:", requestBody);
 

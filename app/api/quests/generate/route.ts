@@ -9,6 +9,16 @@ interface CachedPlace {
   timestamp: number;
 }
 
+interface CompletionFeedback {
+  quest_id: string;
+  quest_title: string;
+  interests_used: string[];
+  wildcard: boolean;
+  completed_at: string;
+  actually_completed: boolean;
+  rating: "loved_it" | "good" | "meh" | null;
+}
+
 const SERVER_CACHE = new Map<string, CachedPlace[]>();
 const SERVER_CACHE_TTL = 12 * 60 * 60 * 1000; // 12 hours
 
@@ -347,16 +357,97 @@ async function searchVerifiedLocations(
   return results;
 }
 
+// Helper: Aggregate completion history for AI prompt
+function getCompletionHistoryBlock(): string {
+  // Note: This runs server-side, so we can't access localStorage directly.
+  // The client should send this data in the request body.
+  // For now, return empty - we'll update the Request type to include it.
+  return "";
+}
+
+// Helper: Build completion history summary from feedback data
+function buildCompletionHistoryBlock(feedbackData: CompletionFeedback[]): string {
+  if (!feedbackData || feedbackData.length === 0) {
+    return "";
+  }
+
+  const loved: string[] = [];
+  const good: string[] = [];
+  const meh: string[] = [];
+  const skipped: string[] = [];
+
+  feedbackData.forEach((item) => {
+    const interests = item.interests_used || [];
+    if (item.actually_completed) {
+      if (item.rating === "loved_it") {
+        loved.push(...interests);
+      } else if (item.rating === "good") {
+        good.push(...interests);
+      } else if (item.rating === "meh") {
+        meh.push(...interests);
+      }
+    } else {
+      skipped.push(...interests);
+    }
+  });
+
+  // Count occurrences
+  const count = (arr: string[]) => {
+    const c: Record<string, number> = {};
+    arr.forEach((i) => {
+      c[i] = (c[i] || 0) + 1;
+    });
+    return c;
+  };
+
+  const lovedCounts = count(loved);
+  const goodCounts = count(good);
+  const mehCounts = count(meh);
+  const skippedCounts = count(skipped);
+
+  // Filter skipped to only those skipped > 2 times
+  const frequentlySkipped = Object.entries(skippedCounts)
+    .filter(([, count]) => count > 2)
+    .map(([interest]) => interest);
+
+  const formatInterests = (counts: Record<string, number>) =>
+    Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([interest, count]) => `${interest} (${count}x)`)
+      .join(", ") || "none";
+
+  return `COMPLETION HISTORY:
+The following is a summary of this user's past quest completions. Use it to avoid repeating mechanics they skip or rate poorly, and to weight toward mechanics they complete and rate highly.
+
+Actually completed and rated 🤩: ${formatInterests(lovedCounts)}
+Actually completed and rated 🙂: ${formatInterests(goodCounts)}
+Actually completed and rated 😐: ${formatInterests(mehCounts)}
+Marked done without completing: ${frequentlySkipped.join(", ") || "none"}
+
+Rules:
+- Do not generate a quest using the primary mechanic of any interest in skipped_interests if it has been skipped more than twice
+- Avoid mechanics from meh_interests unless no better option exists
+- Weight toward loved_interests when multiple mechanic options are available
+- If no completion history exists yet, ignore this section entirely
+
+`;
+}
+
 // Step 3: Generate quests with verified locations
 async function generateQuests(
   request: QuestRequest,
-  verifiedLocations: Array<{ name: string; address: string; rating?: number }>
+  verifiedLocations: Array<{ name: string; address: string; rating?: number }>,
+  completionFeedback?: CompletionFeedback[]
 ): Promise<string> {
   const verifiedLocationsBlock = verifiedLocations
     .map((loc, idx) => `Quest ${idx + 1} location: ${loc.name}, ${loc.address}`)
     .join("\n");
 
-  const userPrompt = `Generate 5 quests for this user:
+  const completionHistoryBlock = completionFeedback && completionFeedback.length > 0
+    ? buildCompletionHistoryBlock(completionFeedback)
+    : "";
+
+  const userPrompt = `${completionHistoryBlock}Generate 5 quests for this user:
 
 USER CONTEXT (treat these as hard constraints, not suggestions):
 City: ${request.location?.city || "city center"}
@@ -810,6 +901,7 @@ function parseAIResponse(content: string, request: QuestRequest): Quest[] {
       intrinsic_rewards: intrinsicRewards,
       icon: isWildcard ? "🎲" : "✨",
       is_wildcard: isWildcard,
+      interests_used: interestsUsed,
     };
 
     return {
@@ -957,7 +1049,7 @@ export async function POST(request: NextRequest) {
 
       // Step 3: Generate quests with verified locations
       console.log("[API] Calling OpenAI...");
-      const aiResponse = await generateQuests(body, verifiedLocations);
+      const aiResponse = await generateQuests(body, verifiedLocations, body.completionFeedback);
       console.log("[API] OpenAI response length:", aiResponse.length);
       console.log("[API] OpenAI response preview:", aiResponse.substring(0, 500));
 

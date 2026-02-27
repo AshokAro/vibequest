@@ -24,6 +24,7 @@ export interface Quest {
   xp_reward: number;
   icon?: string;
   is_wildcard?: boolean;
+  interests_used?: string[];
 }
 
 export interface UserProfile {
@@ -62,6 +63,7 @@ export interface QuestRequest {
   location?: UserPreferences["location"];
   interests?: Interest[];
   preferredQuestTypes?: ("outdoor" | "indoor" | "social")[];
+  completionFeedback?: CompletionFeedback[];
 }
 
 // Creative
@@ -222,4 +224,14 @@ export interface CompletedQuest {
   completedAt: string;
   xpEarned: number;
   duration: number;
+}
+
+export interface CompletionFeedback {
+  quest_id: string;
+  quest_title: string;
+  interests_used: string[];
+  wildcard: boolean;
+  completed_at: string;
+  actually_completed: boolean;
+  rating: "loved_it" | "good" | "meh" | null;
 }

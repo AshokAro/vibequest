@@ -436,16 +436,37 @@ Before writing each quest description, ask yourself:
 
 The description field in the JSON must contain ONLY: the action, the place, the rule, and the voice. Nothing else.
 
+STEPS FORMAT:
+Each quest must include 2-4 clear, actionable steps as a string array. These should be simple instructions the user can follow:
+- Step 1: Travel/arrival instruction (e.g., "Walk to Cubbon Park's north entrance")
+- Step 2: The main activity (e.g., "Find a bench and photograph exactly 7 benches in 20 minutes")
+- Step 3 (optional): Completion/submission action (e.g., "Pick your best shot and share it if you want")
+Keep steps under 10 words each. No fluff.
+
+INTRINSIC REWARDS FORMAT:
+Each quest must include stat rewards (0-25 scale) that reflect what the quest actually develops:
+- fitness: physical exertion, movement, endurance
+- calm: relaxation, mindfulness, slowing down
+- creativity: making, documenting, artistic output
+- social: interaction with strangers or groups
+- knowledge: learning, observation, discovery
+- discipline: focus, constraints, following rules
+Rate each 0-25 based on the quest's primary focus. Most quests should have 1-3 high values, others at 0.
+
 OUTPUT EXAMPLES:
 
 BAD OUTPUT (never produce this):
 {
-  "description": "Head to Cubbon Park and photograph exactly 7 benches. Constraint: 7 photos only. This constraint helps develop a focused eye and prevents overwhelm. The park's greenery provides a calming backdrop for this mindful exercise."
+  "description": "Head to Cubbon Park and photograph exactly 7 benches. Constraint: 7 photos only. This constraint helps develop a focused eye and prevents overwhelm. The park's greenery provides a calming backdrop for this mindful exercise.",
+  "steps": [],
+  "intrinsic_rewards": { "fitness": 0, "calm": 0, "creativity": 0, "social": 0, "knowledge": 0, "discipline": 0 }
 }
 
 GOOD OUTPUT:
 {
-  "description": "Cubbon Park has an unreasonable number of benches for a city that never sits still. Photograph exactly 7 of them — different angles, no repeats, no people on them. Done in under 20 minutes if you move with purpose."
+  "description": "Cubbon Park has an unreasonable number of benches for a city that never sits still. Photograph exactly 7 of them — different angles, no repeats, no people on them. Done in under 20 minutes if you move with purpose.",
+  "steps": ["Walk to Cubbon Park's north entrance", "Photograph exactly 7 different benches", "Pick your best shot"],
+  "intrinsic_rewards": { "fitness": 5, "calm": 10, "creativity": 20, "social": 0, "knowledge": 0, "discipline": 15 }
 }
 
 MISSION STRUCTURE (internal guide only — do not surface any of this in the output):
@@ -689,9 +710,20 @@ function parseAIResponse(content: string, request: QuestRequest): Quest[] {
     const physicalLevel = request.energy === "high" ? 4 : request.energy === "medium" ? 3 : 1;
     const mentalLevel = request.energy === "high" ? 4 : request.energy === "medium" ? 3 : 2;
 
-    // Calculate intrinsic rewards based on interests used and mood
+    // Use AI-provided steps if available, otherwise empty array
+    const steps = Array.isArray(quest.steps) ? quest.steps.map(String) : [];
+
+    // Use AI-provided intrinsic rewards if available, otherwise calculate based on interests/mood
     const interestsUsed = (quest.interests_used as string[]) || [];
-    const intrinsicRewards = {
+    const aiRewards = quest.intrinsic_rewards as Record<string, number> | undefined;
+    const intrinsicRewards = aiRewards ? {
+      fitness: Math.min(25, Math.max(0, aiRewards.fitness || 0)),
+      calm: Math.min(25, Math.max(0, aiRewards.calm || 0)),
+      creativity: Math.min(25, Math.max(0, aiRewards.creativity || 0)),
+      social: Math.min(25, Math.max(0, aiRewards.social || 0)),
+      knowledge: Math.min(25, Math.max(0, aiRewards.knowledge || 0)),
+      discipline: Math.min(25, Math.max(0, aiRewards.discipline || 0)),
+    } : {
       fitness: interestsUsed.some(i => ["running", "cycling", "strength_training", "skateboarding", "swimming", "hiking"].includes(i)) ? 15 : 0,
       calm: request.mood === "chill" || interestsUsed.includes("yoga") ? 15 : 0,
       creativity: interestsUsed.some(i => ["photography", "sketching", "painting", "street_art", "journaling", "poetry", "collage", "craft_diy", "calligraphy"].includes(i)) ? 20 : 0,
@@ -708,7 +740,7 @@ function parseAIResponse(content: string, request: QuestRequest): Quest[] {
       id: `quest-${Date.now()}-${idx}`,
       title: String(quest.title),
       description: fullDescription,
-      steps: [],
+      steps,
       duration_minutes: durationMinutes,
       budget_estimate: budgetEstimate,
       effort: { physical: physicalLevel, mental: mentalLevel },
@@ -721,7 +753,7 @@ function parseAIResponse(content: string, request: QuestRequest): Quest[] {
       id: `quest-${Date.now()}-${idx}`,
       title: String(quest.title),
       description: fullDescription,
-      steps: [],
+      steps,
       duration_minutes: durationMinutes,
       budget_estimate: budgetEstimate,
       effort: {

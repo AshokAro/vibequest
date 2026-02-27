@@ -44,15 +44,27 @@ export function useHaptic() {
     };
   }, []);
 
-  const playTapSound = useCallback((intensity: HapticType = "light") => {
+  const playTapSound = useCallback(async (intensity: HapticType = "light") => {
+    if (!audioContextRef.current) {
+      // Try to create audio context on demand
+      const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (AudioContextClass) {
+        audioContextRef.current = new AudioContextClass();
+      }
+    }
+
     if (!audioContextRef.current) return;
 
     const ctx = audioContextRef.current;
 
-    // Ensure context is running before playing
+    // Ensure context is running before playing - critical for mobile browsers
     if (ctx.state === "suspended") {
-      ctx.resume().catch(() => {});
-      return;
+      try {
+        await ctx.resume();
+        setAudioReady(true);
+      } catch {
+        return;
+      }
     }
 
     try {
@@ -64,11 +76,11 @@ export function useHaptic() {
 
       // Different frequencies and durations based on intensity
       const config = {
-        light: { freq: 1200, duration: 0.02, vol: 0.05 },
-        medium: { freq: 800, duration: 0.04, vol: 0.08 },
-        heavy: { freq: 500, duration: 0.06, vol: 0.1 },
-        success: { freq: 1500, duration: 0.08, vol: 0.08 },
-        error: { freq: 300, duration: 0.1, vol: 0.08 },
+        light: { freq: 1200, duration: 0.02, vol: 0.08 },
+        medium: { freq: 800, duration: 0.04, vol: 0.12 },
+        heavy: { freq: 500, duration: 0.06, vol: 0.15 },
+        success: { freq: 1500, duration: 0.08, vol: 0.12 },
+        error: { freq: 300, duration: 0.1, vol: 0.12 },
       };
 
       const { freq, duration, vol } = config[intensity];
@@ -85,7 +97,7 @@ export function useHaptic() {
     } catch (e) {
       // Silent fail if audio can't play
     }
-  }, [audioReady]);
+  }, []);
 
   const triggerHaptic = useCallback((type: HapticType = "light") => {
     // Vibration API (mobile) - try immediately

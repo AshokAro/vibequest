@@ -57,7 +57,8 @@ export function DraggableSlider({
     setDragValue(newValue);
     lastStepValueRef.current = newValue;
     onChange(newValue);
-    triggerHaptic("light");
+    // Small delay to ensure haptic isn't blocked by touch start
+    requestAnimationFrame(() => triggerHaptic("light"));
   }, [calculateValueFromPosition, onChange, triggerHaptic]);
 
   const handleMove = useCallback((clientX: number) => {
@@ -79,17 +80,14 @@ export function DraggableSlider({
 
   // Touch events
   const onTouchStart = useCallback((e: React.TouchEvent) => {
-    e.preventDefault();
     handleStart(e.touches[0].clientX);
   }, [handleStart]);
 
   const onTouchMove = useCallback((e: React.TouchEvent) => {
-    e.preventDefault();
     handleMove(e.touches[0].clientX);
   }, [handleMove]);
 
-  const onTouchEnd = useCallback((e: React.TouchEvent) => {
-    e.preventDefault();
+  const onTouchEnd = useCallback(() => {
     handleEnd();
   }, [handleEnd]);
 
@@ -102,6 +100,10 @@ export function DraggableSlider({
   // Global move/end handlers for drag continuity
   useEffect(() => {
     if (!isDragging) return;
+
+    // Prevent scrolling while dragging
+    document.body.style.overflow = "hidden";
+    document.body.style.touchAction = "none";
 
     const handleMouseMove = (e: MouseEvent) => {
       handleMove(e.clientX);
@@ -120,12 +122,15 @@ export function DraggableSlider({
     };
 
     // Add global listeners
-    document.addEventListener("mousemove", handleMouseMove, { passive: false });
+    document.addEventListener("mousemove", handleMouseMove, { passive: true });
     document.addEventListener("mouseup", handleMouseUp);
-    document.addEventListener("touchmove", handleTouchMove, { passive: false });
+    document.addEventListener("touchmove", handleTouchMove, { passive: true });
     document.addEventListener("touchend", handleTouchEnd);
 
     return () => {
+      // Restore scrolling
+      document.body.style.overflow = "";
+      document.body.style.touchAction = "";
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
       document.removeEventListener("touchmove", handleTouchMove);

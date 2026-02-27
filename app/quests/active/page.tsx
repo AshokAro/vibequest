@@ -94,8 +94,9 @@ export default function ActiveQuestPage() {
     );
   }
 
-  const progress = (completedSteps.length / quest.steps.length) * 100;
-  const allStepsCompleted = completedSteps.length === quest.steps.length;
+  const hasSteps = quest.steps.length > 0;
+  const progress = hasSteps ? (completedSteps.length / quest.steps.length) * 100 : 0;
+  const allStepsCompleted = hasSteps ? completedSteps.length === quest.steps.length : true;
 
   return (
     <main className="h-full safe-top safe-x bg-[#fafafa] pb-24 overflow-y-auto">
@@ -149,91 +150,103 @@ export default function ActiveQuestPage() {
         </div>
       </section>
 
-      {/* Progress Bar */}
-      <section className="px-5 mb-5">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-black text-[#1a1a1a]">Progress</span>
-          <span className="text-xs text-[#666] font-bold">
-            {completedSteps.length}/{quest.steps.length} steps
-          </span>
-        </div>
-        <div className="h-2 bg-[#e5e5e5] rounded-full overflow-hidden hard-border">
-          <motion.div
-            className="h-full bg-[#ff6b9d] rounded-full"
-            initial={{ width: 0 }}
-            animate={{ width: `${progress}%` }}
-            transition={{ duration: 0.3 }}
-          />
-        </div>
-      </section>
+      {/* Progress Bar - Only show if there are steps */}
+      {hasSteps && (
+        <section className="px-5 mb-5">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-black text-[#1a1a1a]">Progress</span>
+            <span className="text-xs text-[#666] font-bold">
+              {completedSteps.length}/{quest.steps.length} steps
+            </span>
+          </div>
+          <div className="h-2 bg-[#e5e5e5] rounded-full overflow-hidden hard-border">
+            <motion.div
+              className="h-full bg-[#ff6b9d] rounded-full"
+              initial={{ width: 0 }}
+              animate={{ width: `${progress}%` }}
+              transition={{ duration: 0.3 }}
+            />
+          </div>
+        </section>
+      )}
 
       {/* Steps Checklist - Only show if there are steps */}
-      {quest.steps.length > 0 && (
-      <section className="px-5">
-        <div className="bg-white border-2 border-[#1a1a1a] rounded-xl overflow-hidden hard-shadow">
-          <button
-            onClick={withTap(() => setExpanded(!expanded), "light")}
-            className="w-full flex items-center justify-between p-3 tap-target"
-          >
-            <span className="font-black text-[#1a1a1a] text-sm">Quest Steps</span>
-            {expanded ? (
-              <ChevronUp className="w-4 h-4 text-[#666]" />
-            ) : (
-              <ChevronDown className="w-4 h-4 text-[#666]" />
-            )}
-          </button>
+      {hasSteps ? (
+        <section className="px-5">
+          <div className="bg-white border-2 border-[#1a1a1a] rounded-xl overflow-hidden hard-shadow">
+            <button
+              onClick={withTap(() => setExpanded(!expanded), "light")}
+              className="w-full flex items-center justify-between p-3 tap-target"
+            >
+              <span className="font-black text-[#1a1a1a] text-sm">Quest Steps</span>
+              {expanded ? (
+                <ChevronUp className="w-4 h-4 text-[#666]" />
+              ) : (
+                <ChevronDown className="w-4 h-4 text-[#666]" />
+              )}
+            </button>
 
-          <AnimatePresence>
-            {expanded && (
-              <motion.div
-                initial={{ height: 0 }}
-                animate={{ height: "auto" }}
-                exit={{ height: 0 }}
-                className="overflow-hidden"
-              >
-                <div className="px-3 pb-3 space-y-2">
-                  {quest.steps.map((step, idx) => {
-                    const isCompleted = completedSteps.includes(idx);
-                    return (
-                      <button
-                        key={idx}
-                        onClick={() => toggleStep(idx)}
-                        className={cn(
-                          "w-full flex items-start gap-2 p-2.5 rounded-lg text-left tap-target transition-all duration-200 border-2",
-                          isCompleted
-                            ? "bg-[#a3e635]/20 border-[#a3e635]"
-                            : "bg-white border-[#e5e5e5] hover:border-[#1a1a1a]"
-                        )}
-                      >
-                        <div
+            <AnimatePresence>
+              {expanded && (
+                <motion.div
+                  initial={{ height: 0 }}
+                  animate={{ height: "auto" }}
+                  exit={{ height: 0 }}
+                  className="overflow-hidden"
+                >
+                  <div className="px-3 pb-3 space-y-2">
+                    {quest.steps.map((step, idx) => {
+                      const isCompleted = completedSteps.includes(idx);
+                      return (
+                        <button
+                          key={idx}
+                          onClick={() => toggleStep(idx)}
                           className={cn(
-                            "flex-shrink-0 w-5 h-5 rounded flex items-center justify-center border-2 transition-colors",
+                            "w-full flex items-start gap-2 p-2.5 rounded-lg text-left tap-target transition-all duration-200 border-2",
                             isCompleted
-                              ? "bg-[#a3e635] border-[#a3e635]"
-                              : "border-[#e5e5e5]"
+                              ? "bg-[#a3e635]/20 border-[#a3e635]"
+                              : "bg-white border-[#e5e5e5] hover:border-[#1a1a1a]"
                           )}
                         >
-                          {isCompleted && <Check className="w-3 h-3 text-[#1a1a1a]" />}
-                        </div>
-                        <span
-                          className={cn(
-                            "text-xs leading-relaxed font-medium",
-                            isCompleted
-                              ? "text-[#1a1a1a] line-through"
-                              : "text-[#666]"
-                          )}
-                        >
-                          {step}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </section>
+                          <div
+                            className={cn(
+                              "flex-shrink-0 w-5 h-5 rounded flex items-center justify-center border-2 transition-colors",
+                              isCompleted
+                                ? "bg-[#a3e635] border-[#a3e635]"
+                                : "border-[#e5e5e5]"
+                            )}
+                          >
+                            {isCompleted && <Check className="w-3 h-3 text-[#1a1a1a]" />}
+                          </div>
+                          <span
+                            className={cn(
+                              "text-xs leading-relaxed font-medium",
+                              isCompleted
+                                ? "text-[#1a1a1a] line-through"
+                                : "text-[#666]"
+                            )}
+                          >
+                            {step}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </section>
+      ) : (
+        /* Description - Show when no steps available */
+        <section className="px-5">
+          <div className="bg-white border-2 border-[#1a1a1a] rounded-xl p-4 hard-shadow">
+            <h3 className="font-black text-[#1a1a1a] text-sm mb-2">About this Quest</h3>
+            <p className="text-sm text-[#666] leading-relaxed font-medium">
+              {quest.description}
+            </p>
+          </div>
+        </section>
       )}
 
       {/* XP Reward */}

@@ -6,11 +6,12 @@ import { Check, X, RefreshCw, MapPin, Clock, Zap, ChevronUp, DollarSign, Dumbbel
 import { useRouter } from "next/navigation";
 import { useSwipe } from "../hooks/useSwipe";
 import { useTapFeedback } from "../hooks/useTapFeedback";
+import { Button, CircleButton } from "../components/Button";
 import { cn } from "@/lib/utils";
-import type { Mission, MissionRequest, Interest } from "@/lib/types";
+import type { Quest, QuestRequest, Interest } from "@/lib/types";
 import { getCachedLocations, saveLocationsToCache, getLocationsForQueries, type CachedLocation } from "@/lib/locationCache";
 
-// TODO: Consolidate - VALID_INTERESTS is duplicated in profile/page.tsx, settings/page.tsx, and missions/page.tsx
+// TODO: Consolidate - VALID_INTERESTS is duplicated in profile/page.tsx, settings/page.tsx, and quests/page.tsx
 // Move to lib/constants.ts in future cleanup
 const VALID_INTERESTS: Interest[] = [
   "creative", "music_sound", "movement_body", "food_drink", "culture_knowledge",
@@ -39,8 +40,8 @@ const statIcons: Record<string, React.ElementType> = {
   discipline: Target,
 };
 
-// Mood to emoji mapping for mission cards
-const missionEmojis: Record<string, string> = {
+// Mood to emoji mapping for quest cards
+const questEmojis: Record<string, string> = {
   chill: "🌿",
   adventurous: "🚀",
   creative: "🎨",
@@ -55,7 +56,7 @@ const loadingMessages = [
   "Brewing something fire...",
   "Consulting the algorithm...",
   "Plotting your next move...",
-  "Mixing the perfect mission...",
+  "Mixing the perfect quest...",
   "Scanning the city grid...",
   "Connecting the dots...",
   "Assembling your vibe...",
@@ -63,8 +64,8 @@ const loadingMessages = [
   "Syncing with the universe...",
 ];
 
-// Mock missions for MVP - in production these come from API
-const mockMissions: Mission[] = [
+// Mock quests for MVP - in production these come from API
+const mockQuests: Quest[] = [
   {
     id: "1",
     title: "Neighborhood Photo Walk",
@@ -103,15 +104,15 @@ const mockMissions: Mission[] = [
   },
 ];
 
-function MissionCard({
-  mission,
+function QuestCard({
+  quest,
   onAccept,
   onDiscard,
   onRegenerate,
   isTop,
   mood,
 }: {
-  mission: Mission;
+  quest: Quest;
   onAccept: () => void;
   onDiscard: () => void;
   onRegenerate: () => void;
@@ -139,8 +140,8 @@ function MissionCard({
     return "High";
   };
 
-  const emoji = missionEmojis[mood || "chill"] || "✨";
-  const isWildcard = mission.is_wildcard;
+  const emoji = questEmojis[mood || "chill"] || "✨";
+  const isWildcard = quest.is_wildcard;
 
   return (
     <motion.div
@@ -184,12 +185,12 @@ function MissionCard({
             isWildcard ? "bg-[#ff6b9d] text-white" : "bg-[#fbbf24] text-[#1a1a1a]"
           )}>
             <Star className={cn("w-3 h-3", isWildcard ? "text-white" : "text-[#1a1a1a]")} fill="currentColor" />
-            <span className="text-xs font-black">{mission.xp_reward}{isWildcard && "!"}</span>
+            <span className="text-xs font-black">{quest.xp_reward}{isWildcard && "!"}</span>
           </div>
 
           {/* Emoji - Top Center */}
           <div className="text-center">
-            <span className="text-5xl">{mission.icon || "✨"}</span>
+            <span className="text-5xl">{quest.icon || "✨"}</span>
           </div>
         </div>
 
@@ -197,53 +198,53 @@ function MissionCard({
         <div className="flex-1 overflow-y-auto min-h-0">
           {/* Title & Description */}
           <div className="px-5 pb-3">
-            <h3 className="text-lg font-black text-[#1a1a1a] mb-2 leading-tight">{mission.title}</h3>
+            <h3 className="text-lg font-black text-[#1a1a1a] mb-2 leading-tight">{quest.title}</h3>
             <p
               className={cn(
                 "text-sm text-[#666] font-medium leading-relaxed",
                 !expanded && "line-clamp-7"
               )}
             >
-              {mission.description}
+              {quest.description}
             </p>
           </div>
 
         </div>
 
-        {/* Bottom Section - Mission Details Grid + Rewards */}
+        {/* Bottom Section - Quest Details Grid + Rewards */}
         <div className="border-t-2 border-[#1a1a1a] bg-[#fafafa]">
-          {/* Mission Details Grid - 2x2 */}
+          {/* Quest Details Grid - 2x2 */}
           <div className="grid grid-cols-2 border-b-2 border-[#1a1a1a]">
             <div className="flex items-center justify-start gap-2 py-3 px-4 border-r-2 border-b-2 border-[#1a1a1a]">
               <div className="w-8 h-8 rounded-lg bg-[#c084fc] hard-border flex items-center justify-center flex-shrink-0">
                 <Clock className="w-4 h-4 text-[#1a1a1a]" />
               </div>
-              <span className="text-sm font-black text-[#1a1a1a]">{mission.duration_minutes}m</span>
+              <span className="text-sm font-black text-[#1a1a1a]">{quest.duration_minutes}m</span>
             </div>
             <div className="flex items-center justify-start gap-2 py-3 px-4 border-b-2 border-[#1a1a1a] min-w-0">
               <div className="w-8 h-8 rounded-lg bg-[#22d3ee] hard-border flex items-center justify-center flex-shrink-0">
                 <MapPin className="w-4 h-4 text-[#1a1a1a]" />
               </div>
-              <span className="text-sm font-black text-[#1a1a1a] truncate">{mission.location.suggestion.split(",")[0]}</span>
+              <span className="text-sm font-black text-[#1a1a1a] truncate">{quest.location.suggestion.split(",")[0]}</span>
             </div>
             <div className="flex items-center justify-start gap-2 py-3 px-4 border-r-2 border-[#1a1a1a]">
               <div className="w-8 h-8 rounded-lg bg-[#a3e635] hard-border flex items-center justify-center flex-shrink-0">
                 <DollarSign className="w-4 h-4 text-[#1a1a1a]" />
               </div>
-              <span className="text-sm font-black text-[#1a1a1a]">{mission.budget_estimate === 0 ? "Free" : `₹${mission.budget_estimate}`}</span>
+              <span className="text-sm font-black text-[#1a1a1a]">{quest.budget_estimate === 0 ? "Free" : `₹${quest.budget_estimate}`}</span>
             </div>
             <div className="flex items-center justify-start gap-2 py-3 px-4">
               <div className="w-8 h-8 rounded-lg bg-[#ff6b9d] hard-border flex items-center justify-center flex-shrink-0">
                 <Zap className="w-4 h-4 text-white" />
               </div>
-              <span className="text-sm font-black text-[#1a1a1a]">{getEnergyLabel(mission.effort.physical)}</span>
+              <span className="text-sm font-black text-[#1a1a1a]">{getEnergyLabel(quest.effort.physical)}</span>
             </div>
           </div>
 
           {/* Rewards - Icon + Value */}
           <div className="px-4 py-3">
             <div className="flex items-center justify-start gap-2">
-              {Object.entries(mission.intrinsic_rewards)
+              {Object.entries(quest.intrinsic_rewards)
                 .filter(([, value]) => value > 0)
                 .map(([key, value]) => {
                   const Icon = statIcons[key] || Zap;
@@ -269,13 +270,13 @@ function MissionCard({
   );
 }
 
-export default function MissionsPage() {
+export default function QuestsPage() {
   const router = useRouter();
   const { triggerHaptic } = useTapFeedback();
-  const [missions, setMissions] = useState<Mission[]>(mockMissions);
+  const [quests, setQuests] = useState<Quest[]>(mockQuests);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [request, setRequest] = useState<MissionRequest | null>(null);
+  const [request, setRequest] = useState<QuestRequest | null>(null);
   const [loadingMessage, setLoadingMessage] = useState(loadingMessages[0]);
   const [messageIndex, setMessageIndex] = useState(0);
 
@@ -295,7 +296,7 @@ export default function MissionsPage() {
   }, [loading]);
 
   useEffect(() => {
-    const stored = sessionStorage.getItem("missionRequest");
+    const stored = sessionStorage.getItem("questRequest");
     if (stored) {
       setRequest(JSON.parse(stored));
     }
@@ -303,18 +304,18 @@ export default function MissionsPage() {
 
   const handleAccept = useCallback(() => {
     triggerHaptic("success");
-    const mission = missions[currentIndex];
-    sessionStorage.setItem("activeMission", JSON.stringify(mission));
-    router.push("/missions/active");
-  }, [missions, currentIndex, router, triggerHaptic]);
+    const quest = quests[currentIndex];
+    sessionStorage.setItem("activeQuest", JSON.stringify(quest));
+    router.push("/quests/active");
+  }, [quests, currentIndex, router, triggerHaptic]);
 
-  const generateMissions = useCallback(async () => {
+  const generateQuests = useCallback(async () => {
     if (!request) {
       console.log("[Frontend] No request data, skipping generation");
       return;
     }
 
-    console.log("[Frontend] Starting mission generation with request:", request);
+    console.log("[Frontend] Starting quest generation with request:", request);
     setLoading(true);
 
     try {
@@ -336,12 +337,12 @@ export default function MissionsPage() {
         ...request,
         location: userPrefs?.location,
         interests: validInterests,
-        preferredMissionTypes: userPrefs?.preferredMissionTypes,
+        preferredQuestTypes: userPrefs?.preferredQuestTypes,
         cachedLocations: cachedLocations || undefined,
       };
       console.log("[Frontend] Sending request body:", requestBody);
 
-      const response = await fetch("/api/missions/generate", {
+      const response = await fetch("/api/quests/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requestBody),
@@ -352,21 +353,21 @@ export default function MissionsPage() {
       if (!response.ok) {
         const errorText = await response.text();
         console.error("[Frontend] API error:", errorText);
-        throw new Error(`Failed to generate missions: ${response.status}`);
+        throw new Error(`Failed to generate quests: ${response.status}`);
       }
 
       const data = await response.json();
-      console.log("[Frontend] Received missions:", data.missions?.length);
+      console.log("[Frontend] Received quests:", data.quests?.length);
 
       // Save returned locations to cache for future use
       if (city && data.locations && data.locations.length > 0) {
         saveLocationsToCache(city, data.locations);
       }
 
-      setMissions(data.missions);
+      setQuests(data.quests);
       setCurrentIndex(0);
     } catch (error) {
-      console.error("[Frontend] Failed to generate missions:", error);
+      console.error("[Frontend] Failed to generate quests:", error);
     } finally {
       setLoading(false);
     }
@@ -374,23 +375,23 @@ export default function MissionsPage() {
 
   const handleRegenerate = useCallback(async () => {
     triggerHaptic("medium");
-    await generateMissions();
-  }, [generateMissions, triggerHaptic]);
+    await generateQuests();
+  }, [generateQuests, triggerHaptic]);
 
   const handleDiscard = useCallback(() => {
     triggerHaptic("error");
-    if (currentIndex < missions.length - 1) {
+    if (currentIndex < quests.length - 1) {
       setCurrentIndex((prev) => prev + 1);
     } else {
       handleRegenerate();
     }
-  }, [currentIndex, missions.length, triggerHaptic, handleRegenerate]);
+  }, [currentIndex, quests.length, triggerHaptic, handleRegenerate]);
 
   useEffect(() => {
-    if (request && missions === mockMissions) {
-      generateMissions();
+    if (request && quests === mockQuests) {
+      generateQuests();
     }
-  }, [request, generateMissions]);
+  }, [request, generateQuests]);
 
   if (loading) {
     return (
@@ -426,22 +427,24 @@ export default function MissionsPage() {
             {request ? `${request.duration} min • ${request.mood}` : "Swipe to browse"}
           </p>
         </div>
-        <button
+        <Button
           onClick={() => router.push("/")}
-          className="w-10 h-10 rounded-xl bg-white hard-border hard-shadow-sm flex items-center justify-center text-[#1a1a1a] tap-target hover:-translate-y-0.5 transition-all"
-          aria-label="Close"
+          size="icon"
+          variant="secondary"
+          className="w-10 h-10"
+          ariaLabel="Close"
         >
           <X className="w-5 h-5" />
-        </button>
+        </Button>
       </header>
 
       {/* Card Stack - Fixed height container */}
       <div className="relative px-5 mt-2 flex-1" style={{ minHeight: 0 }}>
         <AnimatePresence>
-          {missions.slice(currentIndex, currentIndex + 3).map((mission, idx) => (
-            <MissionCard
-              key={mission.id}
-              mission={mission}
+          {quests.slice(currentIndex, currentIndex + 3).map((quest, idx) => (
+            <QuestCard
+              key={quest.id}
+              quest={quest}
               onAccept={handleAccept}
               onDiscard={handleDiscard}
               onRegenerate={handleRegenerate}
@@ -451,35 +454,39 @@ export default function MissionsPage() {
           ))}
         </AnimatePresence>
 
-        {currentIndex >= missions.length && (
+        {currentIndex >= quests.length && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <button
+            <Button
               onClick={handleRegenerate}
-              className="flex items-center gap-2 px-6 py-3 bg-[#c084fc] text-white font-black hard-border hard-shadow hard-shadow-hover rounded-xl tap-target transition-all"
+              size="md"
+              variant="primary"
+              className="bg-[#c084fc]"
             >
               <RefreshCw className="w-4 h-4" />
               <span>More Vibes</span>
-            </button>
+            </Button>
           </div>
         )}
       </div>
 
       {/* Action Buttons - Fixed at bottom */}
       <div className="flex items-center justify-center gap-4 py-4 flex-shrink-0">
-        <button
+        <CircleButton
           onClick={handleDiscard}
-          className="w-14 h-14 rounded-full bg-white border-2 border-[#1a1a1a] flex items-center justify-center text-[#666] tap-target hard-shadow-sm hover:-translate-y-0.5 transition-all"
-          aria-label="Skip mission"
+          size="md"
+          variant="danger"
+          ariaLabel="Skip quest"
         >
           <X className="w-6 h-6" />
-        </button>
-        <button
+        </CircleButton>
+        <CircleButton
           onClick={handleAccept}
-          className="w-16 h-16 rounded-full bg-[#a3e635] border-2 border-[#1a1a1a] flex items-center justify-center text-[#1a1a1a] tap-target hard-shadow hard-shadow-hover transition-all"
-          aria-label="Accept mission"
+          size="lg"
+          variant="success"
+          ariaLabel="Accept quest"
         >
           <Check className="w-8 h-8" strokeWidth={3} />
-        </button>
+        </CircleButton>
       </div>
 
     </main>

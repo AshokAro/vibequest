@@ -1,14 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { Sparkles, Share2, Home, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Mission } from "@/lib/types";
+import { useTapFeedback } from "../../hooks/useTapFeedback";
+import { Button } from "../../components/Button";
+import type { Quest } from "@/lib/types";
 
-// Confetti component using CSS only
-function Confetti() {
+// Confetti component that hides after animation completes
+function Confetti({ onComplete }: { onComplete: () => void }) {
   const pieces = Array.from({ length: 20 });
 
   const colors = [
@@ -19,31 +21,50 @@ function Confetti() {
     "bg-[#fbbf24]",
   ];
 
+  // Pre-calculate random values to avoid hydration mismatch
+  const pieceData = pieces.map((_, i) => ({
+    id: i,
+    color: colors[i % 5],
+    angle: (i / pieces.length) * 360 + Math.random() * 30,
+    distance: 100 + Math.random() * 150,
+    duration: 1.5 + Math.random() * 0.5,
+    delay: Math.random() * 0.3,
+    rotation: Math.random() * 720 - 360,
+  }));
+
   return (
-    <div className="absolute inset-0 pointer-events-none overflow-hidden">
-      {pieces.map((_, i) => (
-        <motion.div
-          key={i}
-          className={cn("absolute w-3 h-3 hard-border", colors[i % 5])}
-          initial={{
-            x: "50%",
-            y: "40%",
-            scale: 0,
-            rotate: 0,
-          }}
-          animate={{
-            x: `${50 + (Math.random() - 0.5) * 80}%`,
-            y: "-10%",
-            scale: [0, 1, 0.5],
-            rotate: Math.random() * 720 - 360,
-          }}
-          transition={{
-            duration: 1.5 + Math.random(),
-            ease: "easeOut",
-            delay: Math.random() * 0.3,
-          }}
-        />
-      ))}
+    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[180px] w-0 h-0 pointer-events-none z-0">
+      {pieceData.map((piece) => {
+        const radians = (piece.angle * Math.PI) / 180;
+        const endX = Math.cos(radians) * piece.distance;
+        const endY = Math.sin(radians) * piece.distance - 80;
+
+        return (
+          <motion.div
+            key={piece.id}
+            className={cn("absolute w-3 h-3 hard-border", piece.color)}
+            style={{ left: 0, top: 0 }}
+            initial={{
+              x: -6,
+              y: -6,
+              scale: 0,
+              rotate: 0,
+            }}
+            animate={{
+              x: endX - 6,
+              y: endY - 6,
+              scale: [0, 1, 0.5],
+              rotate: piece.rotation,
+            }}
+            transition={{
+              duration: piece.duration,
+              ease: "easeOut",
+              delay: piece.delay,
+            }}
+            onAnimationComplete={piece.id === 0 ? onComplete : undefined}
+          />
+        );
+      })}
     </div>
   );
 }
@@ -111,28 +132,61 @@ const statColors: Record<string, string> = {
   discipline: "text-[#1a1a1a]",
 };
 
-export default function MissionCompletePage() {
+export default function QuestCompletePage() {
   const router = useRouter();
+  const { withTap } = useTapFeedback();
   const [completion, setCompletion] = useState<{
-    mission: Mission | null;
+    quest: Quest | null;
     duration: number;
     xpEarned: number;
     completedAt: string;
   } | null>(null);
+  const [showConfetti, setShowConfetti] = useState(true);
+
+  const handleConfettiComplete = useCallback(() => {
+    setShowConfetti(false);
+  }, []);
 
   useEffect(() => {
-    const stored = sessionStorage.getItem("missionCompletion");
+    const stored = sessionStorage.getItem("questCompletion");
     if (stored) {
-      setCompletion(JSON.parse(stored));
+      const parsed = JSON.parse(stored);
+      setCompletion(parsed);
+
+      // Save to quest history
+      if (parsed.quest) {
+        const historyItem = {
+          id: `${parsed.quest.id}-${Date.now()}`,
+          quest: parsed.quest,
+          completedAt: parsed.completedAt || new Date().toISOString(),
+          xpEarned: parsed.xpEarned,
+          duration: parsed.duration,
+        };
+
+        const existingHistory = localStorage.getItem("vibequest_completed_quests");
+        const history = existingHistory ? JSON.parse(existingHistory) : [];
+        history.unshift(historyItem);
+        // Keep only last 50 completed quests
+        const trimmedHistory = history.slice(0, 50);
+        localStorage.setItem("vibequest_completed_quests", JSON.stringify(trimmedHistory));
+
+        // Update completed_quests count in preferences
+        const prefs = localStorage.getItem("vibequest_preferences");
+        if (prefs) {
+          const parsedPrefs = JSON.parse(prefs);
+          parsedPrefs.completedQuestsCount = (parsedPrefs.completedQuestsCount || 0) + 1;
+          localStorage.setItem("vibequest_preferences", JSON.stringify(parsedPrefs));
+        }
+      }
     }
   }, []);
 
   const handleShare = async () => {
-    if (!completion?.mission) return;
+    if (!completion?.quest) return;
 
     const shareData = {
-      title: "VibeQuest Mission Complete!",
-      text: `I just completed "${completion.mission.title}" and earned ${completion.xpEarned} XP!`,
+      title: "VibeQuest Quest Complete!",
+      text: `I just completed "${completion.quest.title}" and earned ${completion.xpEarned} XP!`,
       url: window.location.origin,
     };
 
@@ -155,18 +209,18 @@ export default function MissionCompletePage() {
     );
   }
 
-  const rewards = completion.mission?.intrinsic_rewards;
+  const rewards = completion.quest?.intrinsic_rewards;
 
   return (
     <main className="h-full safe-top safe-x flex flex-col items-center justify-center px-5 py-6 bg-[#fafafa] relative overflow-hidden">
-      <Confetti />
+      {showConfetti && <Confetti onComplete={handleConfettiComplete} />}
 
       {/* Success Icon */}
       <motion.div
         initial={{ scale: 0, rotate: -180 }}
         animate={{ scale: 1, rotate: 0 }}
         transition={{ type: "spring", stiffness: 200, damping: 15 }}
-        className="w-16 h-16 rounded-xl bg-[#a3e635] hard-border hard-shadow flex items-center justify-center mb-4"
+        className="relative z-10 w-16 h-16 rounded-xl bg-[#a3e635] hard-border hard-shadow flex items-center justify-center mb-4"
       >
         <Sparkles className="w-8 h-8 text-[#1a1a1a]" />
       </motion.div>
@@ -178,7 +232,7 @@ export default function MissionCompletePage() {
         transition={{ delay: 0.2 }}
         className="text-xl font-black text-[#1a1a1a] text-center mb-1 tracking-tight"
       >
-        Mission Complete!
+        Quest Complete!
       </motion.h1>
 
       <motion.p
@@ -187,7 +241,7 @@ export default function MissionCompletePage() {
         transition={{ delay: 0.3 }}
         className="text-xs text-[#666] text-center mb-5 font-medium px-4"
       >
-        {completion.mission?.title}
+        {completion.quest?.title}
       </motion.p>
 
       {/* XP Display */}
@@ -243,29 +297,36 @@ export default function MissionCompletePage() {
         transition={{ delay: 0.6 }}
         className="w-full max-w-[280px] space-y-2"
       >
-        <button
+        <Button
           onClick={handleShare}
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-white border-2 border-[#1a1a1a] text-[#1a1a1a] font-black tap-target hard-shadow-sm hover:-translate-y-0.5 transition-all"
+          size="md"
+          variant="secondary"
+          fullWidth
+          className="py-3"
         >
           <Share2 className="w-4 h-4" />
           Share Your Win
-        </button>
+        </Button>
 
         <div className="flex gap-2">
-          <button
+          <Button
             onClick={() => router.push("/")}
-            className="flex-1 flex items-center justify-center gap-1.5 py-3 rounded-xl bg-white border-2 border-[#1a1a1a] text-[#1a1a1a] font-black tap-target hover:-translate-y-0.5 transition-all"
+            size="md"
+            variant="secondary"
+            className="flex-1 py-3"
           >
             <Home className="w-4 h-4" />
             Home
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => router.push("/")}
-            className="flex-1 flex items-center justify-center gap-1.5 py-3 rounded-xl bg-[#ff6b9d] border-2 border-[#1a1a1a] text-white font-black tap-target hard-shadow-sm hover:-translate-y-0.5 transition-all"
+            size="md"
+            variant="primary"
+            className="flex-1 py-3"
           >
             <RotateCcw className="w-4 h-4" />
             New
-          </button>
+          </Button>
         </div>
       </motion.div>
     </main>

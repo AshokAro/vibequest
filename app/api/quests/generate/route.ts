@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import type { Mission, MissionRequest, Interest } from "@/lib/types";
+import type { Quest, QuestRequest, Interest } from "@/lib/types";
 
 // Simple in-memory cache for server-side caching (per-deployment, not persistent)
 interface CachedPlace {
@@ -24,7 +24,7 @@ const CHAIN_KEYWORDS = [
   "ikea", "decathlon", "big bazaar", "reliance", "tata", "birla"
 ];
 
-// Allowed place types for missions - filter out residential/lodging
+// Allowed place types for quests - filter out residential/lodging
 const ALLOWED_PLACE_TYPES = [
   "park", "tourist_attraction", "museum", "art_gallery", "shopping_mall",
   "store", "restaurant", "cafe", "library", "book_store", "bakery",
@@ -106,18 +106,18 @@ const INTEREST_LOCATION_MAP: Record<string, string[]> = {
 };
 
 // XP calculation formula
-function calculateXP(mission: Omit<Mission, "xp_reward">): number {
-  const base = mission.duration_minutes * 2;
-  const energyBonus = (mission.effort.physical + mission.effort.mental) * 10;
-  const outdoorBonus = mission.location.type === "nearby" ? 10 : 0;
-  const socialBonus = mission.intrinsic_rewards.social > 0 ? 15 : 0;
+function calculateXP(quest: Omit<Quest, "xp_reward">): number {
+  const base = quest.duration_minutes * 2;
+  const energyBonus = (quest.effort.physical + quest.effort.mental) * 10;
+  const outdoorBonus = quest.location.type === "nearby" ? 10 : 0;
+  const socialBonus = quest.intrinsic_rewards.social > 0 ? 15 : 0;
   const noveltyBonus = 10;
 
   return base + energyBonus + outdoorBonus + socialBonus + noveltyBonus;
 }
 
 // Step 1: Classify interests to location type queries
-function generateLocationQueries(request: MissionRequest): string[] {
+function generateLocationQueries(request: QuestRequest): string[] {
   const interests = request.interests || [];
   const city = request.location?.city || "";
   const locationTypes: string[] = [];
@@ -347,16 +347,16 @@ async function searchVerifiedLocations(
   return results;
 }
 
-// Step 3: Generate missions with verified locations
-async function generateMissions(
-  request: MissionRequest,
+// Step 3: Generate quests with verified locations
+async function generateQuests(
+  request: QuestRequest,
   verifiedLocations: Array<{ name: string; address: string; rating?: number }>
 ): Promise<string> {
   const verifiedLocationsBlock = verifiedLocations
-    .map((loc, idx) => `Mission ${idx + 1} location: ${loc.name}, ${loc.address}`)
+    .map((loc, idx) => `Quest ${idx + 1} location: ${loc.name}, ${loc.address}`)
     .join("\n");
 
-  const userPrompt = `Generate 5 missions for this user:
+  const userPrompt = `Generate 5 quests for this user:
 
 USER CONTEXT (treat these as hard constraints, not suggestions):
 City: ${request.location?.city || "city center"}
@@ -366,11 +366,11 @@ Mood: ${request.mood}
 Energy level: ${request.energy}
 Interests: ${request.interests?.join(", ") || "mixed exploration"}
 
-Every mission must be completable within the above constraints. If travel is required, assume the user starts at the specified starting point and is on foot or using a 2-wheeler.
+Every quest must be completable within the above constraints. If travel is required, assume the user starts at the specified starting point and is on foot or using a 2-wheeler.
 
-Output valid JSON with exactly 5 missions in this format:
+Output valid JSON with exactly 5 quests in this format:
 {
-  "missions": [
+  "quests": [
     {
       "title": "...",
       "duration": "...",
@@ -383,11 +383,11 @@ Output valid JSON with exactly 5 missions in this format:
 }`;
 
   const systemPrompt = `VERIFIED LOCATIONS — USE THESE EXACTLY:
-The following 5 locations have been confirmed as real, currently open, and near the user's starting point via Google Maps. You must build each mission around its assigned location. Do not rename them, do not substitute them, do not invent nearby alternatives.
+The following 5 locations have been confirmed as real, currently open, and near the user's starting point via Google Maps. You must build each quest around its assigned location. Do not rename them, do not substitute them, do not invent nearby alternatives.
 
 ${verifiedLocationsBlock}
 
-Your job is to write a mission for each of these locations. The location is fixed. The activity, constraint, and voice are yours to craft using the rules below.
+Your job is to write a quest for each of these locations. The location is fixed. The activity, constraint, and voice are yours to craft using the rules below.
 
 You are a hyperlocal activity generator for an app called VibeQuest. Your persona is a friend who knows the city inside out — someone who has actually done weird, specific things in these neighborhoods and is passing on the tip. Write like that person. Confident, a little offbeat, occasionally wry. Not a travel blogger. Not a life coach. Not a bullet-point machine.
 
@@ -396,7 +396,7 @@ Every location, venue, and place you mention must be genuinely real and publicly
 - For well-known landmarks (Cubbon Park, KR Market, Marine Drive): name them directly.
 - For street-level specifics (a chai stall, a hardware shop): describe the TYPE and NEIGHBORHOOD only. Never invent a business name.
 - If you are not confident a place exists and is accessible: do not name it.
-- If a mission requires spending money, state the exact estimated cost in INR.
+- If a quest requires spending money, state the exact estimated cost in INR.
 
 WHAT A GOOD MISSION LOOKS LIKE:
 "Walk to the north gate of Cubbon Park, pick any bench within 30 seconds of entering, and spend 20 minutes sketching only the shadows cast by the iron railings onto the footpath. Exactly 3 sketches. No people, no trees — only shadows."
@@ -428,7 +428,7 @@ GOOD DESCRIPTION VOICE — examples of the register to aim for:
 These work because they have a point of view. They notice specific things. They have a light sense of humor without being jokey. Aim for this.
 
 FINAL CHECK BEFORE OUTPUT:
-Before writing each mission description, ask yourself:
+Before writing each quest description, ask yourself:
 - Does this sentence explain why a rule exists? DELETE IT.
 - Does this sentence label a constraint? DELETE IT.
 - Does this sentence tell the user what they will "get out of" this? DELETE IT.
@@ -449,12 +449,12 @@ GOOD OUTPUT:
 }
 
 MISSION STRUCTURE (internal guide only — do not surface any of this in the output):
-Every mission must contain all of the following, but woven into the prose — never labeled, never explained:
+Every quest must contain all of the following, but woven into the prose — never labeled, never explained:
 1. Physical anchor — a real, named, publicly accessible location
 2. Tactile action — something physical the user does
 3. Hard constraint — a number, time limit, or rule
 4. One grounding detail — genuinely characteristic of that place
-5. Feasibility — the mission must be obviously doable; no explanation needed
+5. Feasibility — the quest must be obviously doable; no explanation needed
 
 MOOD GUIDANCE:
 - chill: slow-paced, observational, minimal movement, low social pressure
@@ -488,10 +488,10 @@ MUSIC & SOUND
 
 MOVEMENT & BODY
 - Running / Jogging → timed runs between two named landmarks, interval sprints, distance targets on a specific road
-- Cycling → route-based missions with named checkpoints, hill targets, distance within a time cap
+- Cycling → route-based quests with named checkpoints, hill targets, distance within a time cap
 - Yoga / Stretching → specific poses at a named outdoor location, hold for a count, use a bench or railing as a prop
-- Hiking / Trekking → elevation-based missions, step counts, finding a specific viewpoint
-- Swimming → lap counts, timed swims, open water observation missions near water bodies
+- Hiking / Trekking → elevation-based quests, step counts, finding a specific viewpoint
+- Swimming → lap counts, timed swims, open water observation quests near water bodies
 - Strength Training → bodyweight challenge at a named park — push-up count, pull-up bar if available, stair repeats
 - Martial Arts / Combat Sports → shadowboxing or form practice at a specific open space, timed rounds
 - Dance → learn or practice a specific move in a public space, film it, count attempts
@@ -551,7 +551,7 @@ COLLECTING & HUNTING
 - Rare Books → find a secondhand bookshop or pavement stall, find the oldest book, read the first page on-site
 - Ephemera / Paper Goods → collect 5 pieces of printed paper found in public (receipts, flyers, wrappers), arrange them by color or age
 
-NICHE & UNEXPECTED (weight these heavily when selected — they unlock the most distinctive missions)
+NICHE & UNEXPECTED (weight these heavily when selected — they unlock the most distinctive quests)
 - Signage / Wayfinding → document every directional sign within a 100-meter stretch, map where they point
 - Shadows & Light → photograph only shadows for 20 minutes — no objects, no people, only the shadow itself
 - Grids & Patterns → find 5 distinct repeating patterns on a named street — tiles, grilles, brickwork, fabric
@@ -564,7 +564,7 @@ NICHE & UNEXPECTED (weight these heavily when selected — they unlock the most 
 - Typographical Errors in Public Signage → find 5 spelling or grammatical errors on public signage within a defined area, document each
 
 INTEREST INTERSECTION RULE:
-Where 2 or more of the user's interests can be combined into a single coherent mission, do so. Examples of natural intersections:
+Where 2 or more of the user's interests can be combined into a single coherent quest, do so. Examples of natural intersections:
 - Photography + Decay & Texture → shoot only decayed surfaces, with a composition rule
 - Street Food + Talking to Strangers → ask a vendor about their most unusual regular customer while ordering
 - Running + Maps / Cartography → run a route, then draw it from memory
@@ -572,12 +572,12 @@ Where 2 or more of the user's interests can be combined into a single coherent m
 Do not force intersections that make the activity awkward or implausible.
 
 WILDCARD RULE:
-One of the 5 missions must be a wildcard — it uses none of the user's selected interests and goes somewhere unexpected. Do not explain that it is a wildcard in the description. Just write it. Mark it in the JSON only.
+One of the 5 quests must be a wildcard — it uses none of the user's selected interests and goes somewhere unexpected. Do not explain that it is a wildcard in the description. Just write it. Mark it in the JSON only.
 
 TIME AND BUDGET ARE MAXIMUMS, NOT TARGETS:
 - Duration is the upper limit. Shorter is fine. Do not pad.
 - Budget is the upper limit. Free is better than cheap. Cheap is better than spending. Never inflate cost to approach the limit.
-- Each mission has its own duration and cost. They will vary. That is correct.
+- Each quest has its own duration and cost. They will vary. That is correct.
 
 INDIAN CITY REFERENCE (use only confirmed real areas):
 - Bangalore: Indiranagar, Church Street, Cubbon Park, 12th Main, KR Market, Lalbagh, Sankey Tank, MG Road, Brigade Road, Koramangala, Commercial Street, Malleshwaram, Jayanagar
@@ -589,7 +589,7 @@ INDIAN CITY REFERENCE (use only confirmed real areas):
 LOCATION RULE:
 Every location in your output has been verified as real by the app backend before this prompt was generated. Use the verified name and address exactly as provided. Do not paraphrase the location name, do not add qualifiers like "a place called" or "reportedly", and do not invent any detail about the location beyond what is given. If you do not know something specific about the interior or layout of a location, describe the activity without inventing physical details you cannot confirm.
 
-Output must be valid JSON with exactly 5 missions.`;
+Output must be valid JSON with exactly 5 quests.`;
 
   const response = await fetch(OPENAI_URL, {
     method: "POST",
@@ -623,7 +623,7 @@ Output must be valid JSON with exactly 5 missions.`;
   return data.choices[0]?.message?.content || "";
 }
 
-function parseAIResponse(content: string, request: MissionRequest): Mission[] {
+function parseAIResponse(content: string, request: QuestRequest): Quest[] {
   console.log("[parseAIResponse] Parsing content, length:", content.length);
 
   // Try to extract JSON from markdown code blocks first
@@ -653,36 +653,36 @@ function parseAIResponse(content: string, request: MissionRequest): Mission[] {
     throw new Error("Failed to parse JSON response");
   }
 
-  if (!parsed.missions || !Array.isArray(parsed.missions)) {
-    console.error("[parseAIResponse] Invalid format - no missions array:", Object.keys(parsed));
-    throw new Error("Invalid response format: missing missions array");
+  if (!parsed.quests || !Array.isArray(parsed.quests)) {
+    console.error("[parseAIResponse] Invalid format - no quests array:", Object.keys(parsed));
+    throw new Error("Invalid response format: missing quests array");
   }
 
-  console.log("[parseAIResponse] Successfully parsed", parsed.missions.length, "missions");
+  console.log("[parseAIResponse] Successfully parsed", parsed.quests.length, "quests");
 
-  return parsed.missions.map((m: unknown, idx: number): Mission => {
-    const mission = m as Record<string, unknown>;
+  return parsed.quests.map((m: unknown, idx: number): Quest => {
+    const quest = m as Record<string, unknown>;
 
     // Validate required fields
-    if (!mission.title || !mission.description) {
-      throw new Error(`Mission ${idx} missing required fields`);
+    if (!quest.title || !quest.description) {
+      throw new Error(`Quest ${idx} missing required fields`);
     }
 
     // Parse duration from string (e.g., "20 min" -> 20)
-    const durationStr = String(mission.duration || mission.duration_minutes || request.duration);
+    const durationStr = String(quest.duration || quest.duration_minutes || request.duration);
     const durationMatch = durationStr.match(/(\d+)/);
     const durationMinutes = durationMatch ? parseInt(durationMatch[1]) : request.duration;
 
     // Parse cost from string (e.g., "Free" or "₹50" -> 0 or 50)
-    const costStr = String(mission.estimated_cost || mission.budget_estimate || "0");
+    const costStr = String(quest.estimated_cost || quest.budget_estimate || "0");
     const costMatch = costStr.match(/(\d+)/);
     const budgetEstimate = costMatch ? parseInt(costMatch[1]) : 0;
 
     // Combine description + constraint + feasibility into full description
     const fullDescription = [
-      String(mission.description),
-      mission.constraint ? `Constraint: ${mission.constraint}` : "",
-      mission.feasibility ? `Why it works: ${mission.feasibility}` : "",
+      String(quest.description),
+      quest.constraint ? `Constraint: ${quest.constraint}` : "",
+      quest.feasibility ? `Why it works: ${quest.feasibility}` : "",
     ].filter(Boolean).join("\n\n");
 
     // Map energy to physical/mental levels
@@ -690,7 +690,7 @@ function parseAIResponse(content: string, request: MissionRequest): Mission[] {
     const mentalLevel = request.energy === "high" ? 4 : request.energy === "medium" ? 3 : 2;
 
     // Calculate intrinsic rewards based on interests used and mood
-    const interestsUsed = (mission.interests_used as string[]) || [];
+    const interestsUsed = (quest.interests_used as string[]) || [];
     const intrinsicRewards = {
       fitness: interestsUsed.some(i => ["running", "cycling", "strength_training", "skateboarding", "swimming", "hiking"].includes(i)) ? 15 : 0,
       calm: request.mood === "chill" || interestsUsed.includes("yoga") ? 15 : 0,
@@ -700,13 +700,13 @@ function parseAIResponse(content: string, request: MissionRequest): Mission[] {
       discipline: interestsUsed.some(i => ["running", "yoga", "strength_training", "puzzles", "cartography"].includes(i)) ? 10 : 0,
     };
 
-    // Check if this is a wildcard mission
-    const isWildcard = !!mission.wildcard;
+    // Check if this is a wildcard quest
+    const isWildcard = !!quest.wildcard;
 
-    // Bonus XP for wildcard missions (+25% bonus, min 25 XP)
+    // Bonus XP for wildcard quests (+25% bonus, min 25 XP)
     const baseXP = calculateXP({
-      id: `mission-${Date.now()}-${idx}`,
-      title: String(mission.title),
+      id: `quest-${Date.now()}-${idx}`,
+      title: String(quest.title),
       description: fullDescription,
       steps: [],
       duration_minutes: durationMinutes,
@@ -717,9 +717,9 @@ function parseAIResponse(content: string, request: MissionRequest): Mission[] {
     });
     const wildcardBonus = isWildcard ? Math.max(25, Math.floor(baseXP * 0.25)) : 0;
 
-    const missionData: Omit<Mission, "xp_reward"> = {
-      id: `mission-${Date.now()}-${idx}`,
-      title: String(mission.title),
+    const questData: Omit<Quest, "xp_reward"> = {
+      id: `quest-${Date.now()}-${idx}`,
+      title: String(quest.title),
       description: fullDescription,
       steps: [],
       duration_minutes: durationMinutes,
@@ -738,14 +738,14 @@ function parseAIResponse(content: string, request: MissionRequest): Mission[] {
     };
 
     return {
-      ...missionData,
+      ...questData,
       xp_reward: baseXP + wildcardBonus,
     };
   });
 }
 
-// Add source flag to mock missions for debugging
-function generateMockMissions(request: MissionRequest): Mission[] {
+// Add source flag to mock quests for debugging
+function generateMockQuests(request: QuestRequest): Quest[] {
   const city = request.location?.city || "your city";
   const templates = [
     {
@@ -780,7 +780,7 @@ function generateMockMissions(request: MissionRequest): Mission[] {
       location: { type: "nearby" as const, suggestion: `Historic or cultural spot in ${city}` },
       rewards: { fitness: 10, calm: 5, creativity: 5, social: 0, knowledge: 20, discipline: 10 },
     },
-    // Wildcard mock mission - appears last with bonus XP
+    // Wildcard mock quest - appears last with bonus XP
     {
       title: `[MOCK WILDCARD] ${city} Architecture Hunt`,
       description: `[AI FAILED - FALLBACK] Find the oldest building on your street and photograph 3 unique architectural details others might miss.`,
@@ -795,7 +795,7 @@ function generateMockMissions(request: MissionRequest): Mission[] {
   return templates.map((template, idx) => {
     const isWildcard = (template as Record<string, unknown>).is_wildcard as boolean || false;
     const baseXP = calculateXP({
-      id: `mission-${Date.now()}-${idx}`,
+      id: `quest-${Date.now()}-${idx}`,
       title: template.title,
       description: template.description,
       steps: template.steps,
@@ -806,8 +806,8 @@ function generateMockMissions(request: MissionRequest): Mission[] {
       intrinsic_rewards: template.rewards,
     });
 
-    const mission: Omit<Mission, "xp_reward"> = {
-      id: `mission-${Date.now()}-${idx}`,
+    const quest: Omit<Quest, "xp_reward"> = {
+      id: `quest-${Date.now()}-${idx}`,
       title: template.title,
       description: template.description,
       steps: template.steps,
@@ -824,7 +824,7 @@ function generateMockMissions(request: MissionRequest): Mission[] {
     const wildcardBonus = isWildcard ? Math.max(25, Math.floor(baseXP * 0.25)) : 0;
 
     return {
-      ...mission,
+      ...quest,
       xp_reward: baseXP + wildcardBonus,
     };
   });
@@ -833,7 +833,7 @@ function generateMockMissions(request: MissionRequest): Mission[] {
 
 export async function POST(request: NextRequest) {
   try {
-    const body: MissionRequest = await request.json();
+    const body: QuestRequest = await request.json();
     console.log("[API] Received request:", JSON.stringify(body));
 
     // Validate request
@@ -842,13 +842,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid duration" }, { status: 400 });
     }
 
-    let missions: Mission[];
+    let quests: Quest[];
 
     // Check if OpenAI key is configured
     if (!OPENAI_API_KEY) {
-      console.log("[API] No OPENAI_API_KEY configured, using mock missions");
-      missions = generateMockMissions(body);
-      return NextResponse.json({ missions });
+      console.log("[API] No OPENAI_API_KEY configured, using mock quests");
+      quests = generateMockQuests(body);
+      return NextResponse.json({ quests });
     }
 
     console.log("[API] OPENAI_API_KEY is set, attempting AI generation");
@@ -880,9 +880,9 @@ export async function POST(request: NextRequest) {
 
       console.log("[API] Verified locations:", verifiedLocations.map(l => l.name));
 
-      // Step 3: Generate missions with verified locations
+      // Step 3: Generate quests with verified locations
       console.log("[API] Calling OpenAI...");
-      const aiResponse = await generateMissions(body, verifiedLocations);
+      const aiResponse = await generateQuests(body, verifiedLocations);
       console.log("[API] OpenAI response length:", aiResponse.length);
       console.log("[API] OpenAI response preview:", aiResponse.substring(0, 500));
 
@@ -901,26 +901,26 @@ export async function POST(request: NextRequest) {
         }
       });
 
-      missions = parseAIResponse(aiResponse, body);
-      console.log("[API] Parsed missions count:", missions.length);
+      quests = parseAIResponse(aiResponse, body);
+      console.log("[API] Parsed quests count:", quests.length);
 
-      // Ensure we got valid missions
-      if (missions.length === 0) {
-        throw new Error("No missions generated from AI response");
+      // Ensure we got valid quests
+      if (quests.length === 0) {
+        throw new Error("No quests generated from AI response");
       }
 
-      // Return missions with locations for client-side caching
-      return NextResponse.json({ missions, locations: locationsForCache });
+      // Return quests with locations for client-side caching
+      return NextResponse.json({ quests, locations: locationsForCache });
     } catch (aiError) {
       console.error("[API] AI generation failed:", aiError);
-      console.log("[API] Falling back to mock missions");
-      missions = generateMockMissions(body);
-      return NextResponse.json({ missions });
+      console.log("[API] Falling back to mock quests");
+      quests = generateMockQuests(body);
+      return NextResponse.json({ quests });
     }
   } catch (error) {
-    console.error("[API] Mission generation error:", error);
+    console.error("[API] Quest generation error:", error);
     return NextResponse.json(
-      { error: "Failed to generate missions" },
+      { error: "Failed to generate quests" },
       { status: 500 }
     );
   }

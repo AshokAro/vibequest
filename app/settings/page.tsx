@@ -18,9 +18,10 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTapFeedback } from "../hooks/useTapFeedback";
+import { Button, SelectablePill } from "../components/Button";
 import type { Interest, InterestOption, UserPreferences } from "@/lib/types";
 
-// TODO: Consolidate - VALID_INTERESTS is duplicated in profile/page.tsx, settings/page.tsx, and missions/page.tsx
+// TODO: Consolidate - VALID_INTERESTS is duplicated in profile/page.tsx, settings/page.tsx, and quests/page.tsx
 // Move to lib/constants.ts in future cleanup
 const VALID_INTERESTS: Interest[] = [
   "creative", "music_sound", "movement_body", "food_drink", "culture_knowledge",
@@ -80,7 +81,7 @@ function SettingsContent() {
   const [locationError, setLocationError] = useState<string | null>(null);
   const [isLocating, setIsLocating] = useState(false);
   const [selectedInterests, setSelectedInterests] = useState<Interest[]>([]);
-  const [preferredTypes, setPreferredTypes] = useState<UserPreferences["preferredMissionTypes"]>(["outdoor", "indoor"]);
+  const [preferredTypes, setPreferredTypes] = useState<UserPreferences["preferredQuestTypes"]>(["outdoor", "indoor"]);
   const [manualCity, setManualCity] = useState("");
   const [showManualInput, setShowManualInput] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -96,7 +97,7 @@ function SettingsContent() {
         VALID_INTERESTS.includes(i)
       );
       setSelectedInterests(validInterests);
-      setPreferredTypes(parsed.preferredMissionTypes || ["outdoor", "indoor"]);
+      setPreferredTypes(parsed.preferredQuestTypes || ["outdoor", "indoor"]);
       // If we filtered out invalid interests, save the cleaned preferences back
       if (validInterests.length !== (parsed.interests || []).length) {
         const cleanedPrefs: UserPreferences = {
@@ -194,7 +195,7 @@ function SettingsContent() {
     savePreferences(location, newInterests, preferredTypes);
   };
 
-  const toggleMissionType = (type: "outdoor" | "indoor" | "social") => {
+  const toggleQuestType = (type: "outdoor" | "indoor" | "social") => {
     const newTypes = preferredTypes.includes(type)
       ? preferredTypes.filter((t) => t !== type)
       : [...preferredTypes, type];
@@ -205,13 +206,13 @@ function SettingsContent() {
   const savePreferences = (
     loc: UserPreferences["location"],
     ints: Interest[],
-    types: UserPreferences["preferredMissionTypes"]
+    types: UserPreferences["preferredQuestTypes"]
   ) => {
     const newPrefs: UserPreferences = {
       hasCompletedOnboarding: true,
       location: loc,
       interests: ints,
-      preferredMissionTypes: types,
+      preferredQuestTypes: types,
     };
     localStorage.setItem("vibequest_preferences", JSON.stringify(newPrefs));
     setSaved(true);
@@ -222,12 +223,14 @@ function SettingsContent() {
     <main className="h-full safe-top safe-x bg-[#fafafa] overflow-y-auto">
       {/* Header */}
       <header className="px-5 pt-4 pb-3 flex items-center justify-between">
-        <button
-          onClick={withTap(() => router.push("/"), "light")}
-          className="w-10 h-10 rounded-xl bg-white hard-border hard-shadow-sm flex items-center justify-center text-[#1a1a1a] tap-target hover:-translate-y-0.5 transition-all"
+        <Button
+          onClick={() => router.push("/")}
+          size="icon"
+          variant="secondary"
+          className="w-10 h-10"
         >
           <ArrowLeft className="w-5 h-5" />
-        </button>
+        </Button>
         <h1 className="text-lg font-black text-[#1a1a1a]">Settings</h1>
         <div className="w-10" />
       </header>
@@ -287,7 +290,7 @@ function SettingsContent() {
           <div className="mb-6">
             <h2 className="text-xl font-black text-[#1a1a1a] mb-2">Your Location</h2>
             <p className="text-sm text-[#666] font-medium">
-              Update where you&apos;re based for local mission suggestions.
+              Update where you&apos;re based for local quest suggestions.
             </p>
           </div>
 
@@ -313,15 +316,13 @@ function SettingsContent() {
               </div>
             </div>
           ) : (
-            <button
+            <Button
               onClick={requestLocation}
               disabled={isLocating}
-              className={cn(
-                "w-full flex items-center justify-center gap-2 py-4 rounded-xl font-black text-sm tap-target transition-all hard-border hard-shadow mb-4",
-                isLocating
-                  ? "bg-[#e5e5e5] text-[#999] cursor-not-allowed shadow-none"
-                  : "bg-[#c084fc] text-white hard-shadow-hover"
-              )}
+              size="md"
+              variant="primary"
+              fullWidth
+              className="mb-4 py-4"
             >
               {isLocating ? (
                 <>
@@ -334,7 +335,7 @@ function SettingsContent() {
                   Detect My Location
                 </>
               )}
-            </button>
+            </Button>
           )}
 
           {locationError && (
@@ -359,18 +360,14 @@ function SettingsContent() {
                     className="w-full pl-10 pr-3 py-3 bg-white hard-border rounded-xl text-sm text-[#1a1a1a] placeholder:text-[#999] focus:outline-none focus:ring-2 focus:ring-[#ff6b9d] font-bold"
                   />
                 </div>
-                <button
+                <Button
                   onClick={setManualLocation}
                   disabled={!manualCity.trim() || isLocating}
-                  className={cn(
-                    "px-4 py-3 rounded-xl font-black text-sm tap-target transition-all hard-border hard-shadow",
-                    manualCity.trim() && !isLocating
-                      ? "bg-[#ff6b9d] text-white hard-shadow-hover"
-                      : "bg-[#e5e5e5] text-[#999] cursor-not-allowed shadow-none"
-                  )}
+                  size="sm"
+                  variant="primary"
                 >
                   {isLocating ? <Loader2 className="w-4 h-4 animate-spin" /> : "Set"}
-                </button>
+                </Button>
               </div>
             </div>
           )}
@@ -387,32 +384,29 @@ function SettingsContent() {
           <div className="mb-4">
             <h2 className="text-xl font-black text-[#1a1a1a] mb-2">Your Interests</h2>
             <p className="text-sm text-[#666] font-medium">
-              Select what you love. We&apos;ll match missions to your vibe.
+              Select what you love. We&apos;ll match quests to your vibe.
             </p>
           </div>
 
-          {/* Mission Type Preference */}
+          {/* Quest Type Preference */}
           <div className="mb-4">
-            <p className="text-xs font-black text-[#1a1a1a] mb-2">Mission Types</p>
+            <p className="text-xs font-black text-[#1a1a1a] mb-2">Quest Types</p>
             <div className="flex flex-wrap gap-2">
               {[
                 { value: "outdoor" as const, label: "Outdoor", icon: Compass, color: "bg-[#22d3ee]" },
                 { value: "indoor" as const, label: "Indoor", icon: BookOpen, color: "bg-[#c084fc]" },
                 { value: "social" as const, label: "Social", icon: Users, color: "bg-[#ff6b9d]" },
               ].map((type) => (
-                <button
+                <SelectablePill
                   key={type.value}
-                  onClick={() => toggleMissionType(type.value)}
-                  className={cn(
-                    "flex items-center gap-1.5 px-3 py-2 rounded-lg border-2 border-[#1a1a1a] tap-target transition-all hard-shadow-sm text-xs",
-                    preferredTypes.includes(type.value)
-                      ? `${type.color} text-white hard-shadow -translate-y-1`
-                      : "bg-white text-[#1a1a1a] hover:-translate-y-0.5"
-                  )}
+                  onClick={() => toggleQuestType(type.value)}
+                  selected={preferredTypes.includes(type.value)}
+                  selectedClassName={type.color}
+                  ariaLabel={type.label}
                 >
                   <type.icon className="w-3.5 h-3.5" />
-                  <span className="font-bold">{type.label}</span>
-                </button>
+                  <span>{type.label}</span>
+                </SelectablePill>
               ))}
             </div>
           </div>
@@ -430,10 +424,10 @@ function SettingsContent() {
                   key={interest.value}
                   onClick={() => toggleInterest(interest.value)}
                   className={cn(
-                    "p-3 rounded-lg border-2 border-[#1a1a1a] text-left tap-target transition-all duration-200 hard-shadow-sm",
+                    "p-3 rounded-xl border-2 border-[#1a1a1a] text-left tap-target transition-all duration-200 hard-shadow-sm",
                     isSelected
-                      ? `${colorClass} text-white hard-shadow -translate-y-1`
-                      : "bg-white text-[#1a1a1a] hover:-translate-y-0.5"
+                      ? `${colorClass} text-white hard-shadow -translate-y-0.5`
+                      : "bg-white text-[#1a1a1a] hard-shadow-hover"
                   )}
                 >
                   <div className="flex items-center justify-between mb-1">

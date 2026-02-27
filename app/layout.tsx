@@ -11,7 +11,7 @@ const funnelDisplay = Funnel_Display({
 
 export const metadata: Metadata = {
   title: "VibeQuest",
-  description: "AI-powered real-world mission generator",
+  description: "AI-powered real-world quest generator",
   manifest: "/manifest.json",
   icons: {
     icon: "/icons/icon-192x192.png",

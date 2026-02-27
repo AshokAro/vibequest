@@ -14,7 +14,7 @@ export default function OfflinePage() {
       </h1>
 
       <p className="text-slate-400 text-center mb-8 max-w-xs">
-        No worries! Your last missions are saved. Reconnect to generate new vibes.
+        No worries! Your last quests are saved. Reconnect to generate new vibes.
       </p>
 
       <button

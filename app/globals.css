@@ -127,7 +127,6 @@
   }
 
   .hard-shadow-hover:hover {
-    box-shadow: 6px 6px 0px 0px #1a1a1a;
     transform: translate(-2px, -2px);
   }
 

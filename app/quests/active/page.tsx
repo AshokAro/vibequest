@@ -6,7 +6,8 @@ import { useRouter } from "next/navigation";
 import { Play, Pause, RotateCcw, Check, MapPin, ChevronDown, ChevronUp, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTapFeedback } from "../../hooks/useTapFeedback";
-import type { Mission } from "@/lib/types";
+import { Button } from "../../components/Button";
+import type { Quest } from "@/lib/types";
 
 function formatTime(seconds: number): string {
   const mins = Math.floor(seconds / 60);
@@ -14,10 +15,10 @@ function formatTime(seconds: number): string {
   return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
 }
 
-export default function ActiveMissionPage() {
+export default function ActiveQuestPage() {
   const router = useRouter();
   const { withTap, triggerHaptic } = useTapFeedback();
-  const [mission, setMission] = useState<Mission | null>(null);
+  const [quest, setQuest] = useState<Quest | null>(null);
   const [secondsElapsed, setSecondsElapsed] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
@@ -28,9 +29,9 @@ export default function ActiveMissionPage() {
   const visibilityRef = useRef(true);
 
   useEffect(() => {
-    const stored = sessionStorage.getItem("activeMission");
+    const stored = sessionStorage.getItem("activeQuest");
     if (stored) {
-      setMission(JSON.parse(stored));
+      setQuest(JSON.parse(stored));
     } else {
       router.push("/");
     }
@@ -76,16 +77,16 @@ export default function ActiveMissionPage() {
 
   const handleComplete = useCallback(() => {
     const completionData = {
-      mission,
+      quest,
       duration: secondsElapsed,
-      xpEarned: mission?.xp_reward || 0,
+      xpEarned: quest?.xp_reward || 0,
       completedAt: new Date().toISOString(),
     };
-    sessionStorage.setItem("missionCompletion", JSON.stringify(completionData));
-    router.push("/missions/complete");
-  }, [mission, secondsElapsed, router]);
+    sessionStorage.setItem("questCompletion", JSON.stringify(completionData));
+    router.push("/quests/complete");
+  }, [quest, secondsElapsed, router]);
 
-  if (!mission) {
+  if (!quest) {
     return (
       <main className="h-full flex items-center justify-center bg-[#fafafa]">
         <div className="w-8 h-8 border-2 border-[#ff6b9d] border-t-transparent rounded-full animate-spin" />
@@ -93,8 +94,8 @@ export default function ActiveMissionPage() {
     );
   }
 
-  const progress = (completedSteps.length / mission.steps.length) * 100;
-  const allStepsCompleted = completedSteps.length === mission.steps.length;
+  const progress = (completedSteps.length / quest.steps.length) * 100;
+  const allStepsCompleted = completedSteps.length === quest.steps.length;
 
   return (
     <main className="h-full safe-top safe-x bg-[#fafafa] pb-24 overflow-y-auto">
@@ -102,9 +103,9 @@ export default function ActiveMissionPage() {
       <header className="px-5 pt-5 pb-3">
         <div className="flex items-center gap-2 text-[#666] mb-1">
           <MapPin className="w-3 h-3" />
-          <span className="text-xs font-bold">{mission.location.suggestion}</span>
+          <span className="text-xs font-bold">{quest.location.suggestion}</span>
         </div>
-        <h1 className="text-lg font-black text-[#1a1a1a] tracking-tight">{mission.title}</h1>
+        <h1 className="text-lg font-black text-[#1a1a1a] tracking-tight">{quest.title}</h1>
       </header>
 
       {/* Timer Card */}
@@ -115,14 +116,14 @@ export default function ActiveMissionPage() {
               {formatTime(secondsElapsed)}
             </div>
             <p className="text-xs text-[#1a1a1a]/70 mt-1 font-bold">
-              Target: {mission.duration_minutes} min
+              Target: {quest.duration_minutes} min
             </p>
           </div>
 
           <div className="flex items-center justify-center gap-3 mt-4">
             <button
               onClick={withTap(() => setSecondsElapsed(0), "light")}
-              className="w-10 h-10 rounded-lg bg-white hard-border flex items-center justify-center text-[#666] tap-target hover:-translate-y-0.5 transition-all"
+              className="w-10 h-10 rounded-lg bg-white border-2 border-[#1a1a1a] hard-shadow-sm hard-shadow-hover flex items-center justify-center text-[#666] tap-target transition-all"
               aria-label="Reset timer"
             >
               <RotateCcw className="w-4 h-4" />
@@ -131,10 +132,10 @@ export default function ActiveMissionPage() {
             <button
               onClick={withTap(() => setIsRunning(!isRunning), "medium")}
               className={cn(
-                "w-14 h-14 rounded-xl flex items-center justify-center tap-target transition-all duration-200 hard-border",
+                "w-14 h-14 rounded-xl flex items-center justify-center tap-target transition-all duration-200 border-2 border-[#1a1a1a] hard-shadow",
                 isRunning
-                  ? "bg-[#fbbf24] text-[#1a1a1a] hover:-translate-y-0.5"
-                  : "bg-[#a3e635] text-[#1a1a1a] hover:-translate-y-0.5"
+                  ? "bg-[#fbbf24] text-[#1a1a1a] hard-shadow-hover"
+                  : "bg-[#a3e635] text-[#1a1a1a] hard-shadow-hover"
               )}
               aria-label={isRunning ? "Pause timer" : "Start timer"}
             >
@@ -153,7 +154,7 @@ export default function ActiveMissionPage() {
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-black text-[#1a1a1a]">Progress</span>
           <span className="text-xs text-[#666] font-bold">
-            {completedSteps.length}/{mission.steps.length} steps
+            {completedSteps.length}/{quest.steps.length} steps
           </span>
         </div>
         <div className="h-2 bg-[#e5e5e5] rounded-full overflow-hidden hard-border">
@@ -167,14 +168,14 @@ export default function ActiveMissionPage() {
       </section>
 
       {/* Steps Checklist - Only show if there are steps */}
-      {mission.steps.length > 0 && (
+      {quest.steps.length > 0 && (
       <section className="px-5">
         <div className="bg-white border-2 border-[#1a1a1a] rounded-xl overflow-hidden hard-shadow">
           <button
             onClick={withTap(() => setExpanded(!expanded), "light")}
             className="w-full flex items-center justify-between p-3 tap-target"
           >
-            <span className="font-black text-[#1a1a1a] text-sm">Mission Steps</span>
+            <span className="font-black text-[#1a1a1a] text-sm">Quest Steps</span>
             {expanded ? (
               <ChevronUp className="w-4 h-4 text-[#666]" />
             ) : (
@@ -191,7 +192,7 @@ export default function ActiveMissionPage() {
                 className="overflow-hidden"
               >
                 <div className="px-3 pb-3 space-y-2">
-                  {mission.steps.map((step, idx) => {
+                  {quest.steps.map((step, idx) => {
                     const isCompleted = completedSteps.includes(idx);
                     return (
                       <button
@@ -239,43 +240,43 @@ export default function ActiveMissionPage() {
       <section className="px-5 mt-5 mb-4">
         <div className="flex items-center justify-center gap-2">
           <Star className="w-5 h-5 text-[#fbbf24]" fill="currentColor" />
-          <span className="text-xl font-black text-[#1a1a1a]">+{mission.xp_reward} XP</span>
+          <span className="text-xl font-black text-[#1a1a1a]">+{quest.xp_reward} XP</span>
         </div>
       </section>
 
       {/* Complete Button */}
       <div className="px-5 pb-4">
         {!showCompleteConfirm ? (
-          <button
-            onClick={withTap(() => setShowCompleteConfirm(true), "medium")}
+          <Button
+            onClick={() => setShowCompleteConfirm(true)}
             disabled={!allStepsCompleted}
-            className={cn(
-              "w-full py-3.5 rounded-xl font-black tap-target transition-all duration-200 border-2",
-              allStepsCompleted
-                ? "bg-[#a3e635] border-[#1a1a1a] text-[#1a1a1a] hard-shadow hard-shadow-hover"
-                : "bg-[#e5e5e5] border-[#ccc] text-[#999] cursor-not-allowed"
-            )}
+            size="lg"
+            variant={allStepsCompleted ? "success" : "secondary"}
           >
-            {allStepsCompleted ? "Complete Mission" : "Complete all steps to finish"}
-          </button>
+            {allStepsCompleted ? "Complete Quest" : "Complete all steps to finish"}
+          </Button>
         ) : (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             className="flex gap-2"
           >
-            <button
-              onClick={withTap(() => setShowCompleteConfirm(false), "light")}
-              className="flex-1 py-3.5 rounded-xl font-black bg-white border-2 border-[#1a1a1a] text-[#1a1a1a] tap-target hard-shadow-sm hover:-translate-y-0.5 transition-all"
+            <Button
+              onClick={() => setShowCompleteConfirm(false)}
+              size="md"
+              variant="secondary"
+              className="flex-1 py-3.5"
             >
               Cancel
-            </button>
-            <button
-              onClick={withTap(handleComplete, "success")}
-              className="flex-1 py-3.5 rounded-xl font-black bg-[#ff6b9d] border-2 border-[#1a1a1a] text-white hard-shadow hard-shadow-hover tap-target"
+            </Button>
+            <Button
+              onClick={handleComplete}
+              size="md"
+              variant="primary"
+              className="flex-1 py-3.5"
             >
               Confirm
-            </button>
+            </Button>
           </motion.div>
         )}
       </div>

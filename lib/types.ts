@@ -1,4 +1,4 @@
-export interface Mission {
+export interface Quest {
   id: string;
   title: string;
   description: string;
@@ -40,12 +40,12 @@ export interface UserProfile {
     knowledge: number;
     discipline: number;
   };
-  completed_missions: number;
+  completed_quests: number;
 }
 
 export interface FeedItem {
   id: string;
-  mission_title: string;
+  quest_title: string;
   reflection: string;
   author_name: string;
   completed_at: string;
@@ -54,14 +54,14 @@ export interface FeedItem {
 
 export type Mood = "chill" | "adventurous" | "creative" | "social" | "focused" | "playful";
 
-export interface MissionRequest {
+export interface QuestRequest {
   duration: number;
   budget: number;
   mood: Mood;
   energy: "low" | "medium" | "high";
   location?: UserPreferences["location"];
   interests?: Interest[];
-  preferredMissionTypes?: ("outdoor" | "indoor" | "social")[];
+  preferredQuestTypes?: ("outdoor" | "indoor" | "social")[];
 }
 
 // Creative
@@ -183,7 +183,7 @@ export type InterestCategory =
   | "collecting_hunting"
   | "niche_unexpected";
 
-// Specific interests (used in mission generation)
+// Specific interests (used in quest generation)
 export type Interest =
   | CreativeInterest
   | MusicInterest
@@ -206,7 +206,7 @@ export interface UserPreferences {
     country: string;
   } | null;
   interests: Interest[];
-  preferredMissionTypes: ("outdoor" | "indoor" | "social")[];
+  preferredQuestTypes: ("outdoor" | "indoor" | "social")[];
 }
 
 export interface InterestOption {
@@ -214,4 +214,12 @@ export interface InterestOption {
   label: string;
   emoji: string;
   description: string;
+}
+
+export interface CompletedQuest {
+  id: string;
+  quest: Quest;
+  completedAt: string;
+  xpEarned: number;
+  duration: number;
 }

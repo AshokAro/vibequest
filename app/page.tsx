@@ -3,11 +3,12 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Dices, Zap, Clock, MapPin, User, ChevronRight } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import type { Mood, UserPreferences } from "@/lib/types";
 import { useTapFeedback } from "./hooks/useTapFeedback";
 import { DraggableSlider } from "./components/DraggableSlider";
+import { Button, SelectablePill, IconButton } from "./components/Button";
+import { Logo } from "./components/Logo";
 
 // Gumroad-style pop colors
 const moods: { value: Mood; label: string; emoji: string; bg: string }[] = [
@@ -36,7 +37,7 @@ const ctaTexts = [
   "Send It",
   "Let's Go",
   "Cook Something Up",
-  "Drop a Mission",
+  "Drop a Quest",
   "Spin the Wheel",
   "Make It Happen",
 ];
@@ -48,7 +49,6 @@ export default function HomePage() {
   const [budget, setBudget] = useState(0);
   const [selectedMood, setSelectedMood] = useState<Mood | "random">("random");
   const [energy, setEnergy] = useState<"low" | "medium" | "high">("medium");
-  const [isLoading, setIsLoading] = useState(false);
   const [preferences, setPreferences] = useState<UserPreferences | null>(null);
   const [ctaText, setCtaText] = useState("Roll a Vibe");
 
@@ -63,20 +63,18 @@ export default function HomePage() {
     setCtaText(ctaTexts[Math.floor(Math.random() * ctaTexts.length)]);
   }, [router]);
 
-  const handleRollVibe = async () => {
+  const handleRollVibe = () => {
     triggerHaptic("heavy");
-    setIsLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 800));
     // If "random" is selected, pick a random mood from the available moods
     const moodToPass = selectedMood === "random"
       ? moods[Math.floor(Math.random() * moods.length)].value
       : selectedMood;
-    const missionRequest = { duration, mood: moodToPass, energy, budget };
-    sessionStorage.setItem("missionRequest", JSON.stringify(missionRequest));
-    router.push("/missions");
+    const questRequest = { duration, mood: moodToPass, energy, budget };
+    sessionStorage.setItem("questRequest", JSON.stringify(questRequest));
+    router.push("/quests");
   };
 
-  const canRoll = selectedMood !== null && !isLoading;
+  const canRoll = selectedMood !== null;
 
   return (
     <main className="h-full bg-[#fafafa] flex flex-col overflow-hidden">
@@ -84,8 +82,8 @@ export default function HomePage() {
       <header className="px-5 pt-4 pb-4 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#ff6b9d] hard-border hard-shadow flex items-center justify-center">
-              <Zap className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 rounded-lg hard-border hard-shadow flex items-center justify-center overflow-hidden">
+              <Logo size={40} />
             </div>
             <div>
               <h1 className="text-lg font-black text-[#1a1a1a] tracking-tight">VibeQuest</h1>
@@ -101,13 +99,12 @@ export default function HomePage() {
               )}
             </div>
           </div>
-          <button
+          <IconButton
             onClick={() => router.push("/profile")}
-            className="w-9 h-9 rounded-lg bg-white hard-border hard-shadow-sm flex items-center justify-center text-[#1a1a1a] tap-target hover:-translate-y-0.5 transition-all"
-            aria-label="Profile"
-          >
-            <User className="w-4 h-4" />
-          </button>
+            icon={User}
+            ariaLabel="Profile"
+            variant="secondary"
+          />
         </div>
       </header>
 
@@ -118,7 +115,7 @@ export default function HomePage() {
           <h2 className="text-2xl font-black text-[#1a1a1a] leading-tight tracking-tight">
             Got a few <span className="text-[#ff6b9d]">minutes?</span>
           </h2>
-          <p className="text-[#666] mt-2 text-sm font-medium">Let&apos;s find you something fun.</p>
+          <p className="text-[#666] mt-1 text-sm font-medium">Let&apos;s find you something fun.</p>
         </section>
 
         {/* Duration Slider */}
@@ -177,36 +174,30 @@ export default function HomePage() {
         </section>
 
         {/* Mood Selector */}
-        <section>
+        <section className="mt-6">
           <span className="text-sm font-bold text-[#1a1a1a] block">What&apos;s your vibe?</span>
           <div className="flex gap-3 overflow-x-auto overflow-y-visible pb-2 pt-2 -mx-5 px-5" style={{ minHeight: '56px' }}>
             {/* Feeling Lucky pill - first */}
-            <button
+            <SelectablePill
               onClick={withTap(() => setSelectedMood("random"), "light")}
-              className={cn(
-                "flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl border-2 border-[#1a1a1a] tap-target transition-all duration-200 hard-shadow-sm",
-                selectedMood === "random"
-                  ? `${feelingLucky.bg} text-white hard-shadow -translate-y-0.5`
-                  : "bg-white text-[#1a1a1a] hover:-translate-y-0.5"
-              )}
+              selected={selectedMood === "random"}
+              selectedClassName={feelingLucky.bg}
+              ariaLabel="Feeling Lucky"
             >
               <span className="text-base">{feelingLucky.emoji}</span>
-              <span className="text-sm font-bold whitespace-nowrap">{feelingLucky.label}</span>
-            </button>
+              <span className="whitespace-nowrap">{feelingLucky.label}</span>
+            </SelectablePill>
             {moods.map((mood) => (
-              <button
+              <SelectablePill
                 key={mood.value}
                 onClick={withTap(() => setSelectedMood(mood.value), "light")}
-                className={cn(
-                  "flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl border-2 border-[#1a1a1a] tap-target transition-all duration-200 hard-shadow-sm",
-                  selectedMood === mood.value
-                    ? `${mood.bg} text-white hard-shadow -translate-y-0.5`
-                    : "bg-white text-[#1a1a1a] hover:-translate-y-0.5"
-                )}
+                selected={selectedMood === mood.value}
+                selectedClassName={mood.bg}
+                ariaLabel={mood.label}
               >
                 <span className="text-base">{mood.emoji}</span>
-                <span className="text-sm font-bold whitespace-nowrap">{mood.label}</span>
-              </button>
+                <span className="whitespace-nowrap">{mood.label}</span>
+              </SelectablePill>
             ))}
           </div>
         </section>
@@ -220,10 +211,10 @@ export default function HomePage() {
                 key={level.value}
                 onClick={withTap(() => setEnergy(level.value as "low" | "medium" | "high"), "light")}
                 className={cn(
-                  "flex flex-col items-center gap-1 px-2 py-3 rounded-xl border-2 border-[#1a1a1a] tap-target transition-all duration-200 hard-shadow-sm",
+                  "flex flex-col items-center justify-center gap-1 px-2 py-3 rounded-xl border-2 border-[#1a1a1a] tap-target transition-all duration-200 hard-shadow-sm",
                   energy === level.value
                     ? `${level.color} text-[#1a1a1a] hard-shadow -translate-y-0.5`
-                    : "bg-white text-[#1a1a1a] hover:-translate-y-0.5"
+                    : "bg-white text-[#1a1a1a] hard-shadow-hover"
                 )}
               >
                 <span className="text-sm font-black">{level.label}</span>
@@ -236,40 +227,15 @@ export default function HomePage() {
 
       {/* Sticky CTA Button */}
       <div className="flex-shrink-0 px-5 py-4 bg-gradient-to-t from-[#fafafa] via-[#fafafa] to-transparent">
-        <AnimatePresence mode="wait">
-          {isLoading ? (
-            <motion.div
-              key="loading"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-            >
-              <div className="bg-[#c084fc] hard-border rounded-2xl py-4 px-6 flex items-center justify-center gap-3 hard-shadow">
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                <span className="text-white font-bold">Cooking something up...</span>
-              </div>
-            </motion.div>
-          ) : (
-            <motion.button
-              key="button"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={handleRollVibe}
-              disabled={!canRoll}
-              className={cn(
-                "w-full flex items-center justify-center gap-3 py-4 px-6 rounded-2xl font-black text-lg tap-target transition-all duration-200 border-2 border-[#1a1a1a] hard-shadow",
-                canRoll
-                  ? "bg-[#ff6b9d] text-white hard-shadow-hover"
-                  : "bg-[#e5e5e5] text-[#999] border-[#ccc] cursor-not-allowed shadow-none"
-              )}
-            >
-              <Dices className="w-5 h-5" />
-              {ctaText}
-            </motion.button>
-          )}
-        </AnimatePresence>
+        <Button
+          onClick={handleRollVibe}
+          disabled={!canRoll}
+          size="lg"
+          variant="primary"
+        >
+          <Dices className="w-5 h-5" />
+          {ctaText}
+        </Button>
       </div>
     </main>
   );

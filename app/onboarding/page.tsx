@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTapFeedback } from "../hooks/useTapFeedback";
+import { Button, SelectablePill } from "../components/Button";
+import { Logo } from "../components/Logo";
 import type { Interest, InterestOption, UserPreferences } from "@/lib/types";
 
 interface PlacePrediction {
@@ -63,7 +65,7 @@ export default function OnboardingPage() {
   const [locationError, setLocationError] = useState<string | null>(null);
   const [isLocating, setIsLocating] = useState(false);
   const [selectedInterests, setSelectedInterests] = useState<Interest[]>([]);
-  const [preferredTypes, setPreferredTypes] = useState<UserPreferences["preferredMissionTypes"]>(["outdoor", "indoor"]);
+  const [preferredTypes, setPreferredTypes] = useState<UserPreferences["preferredQuestTypes"]>(["outdoor", "indoor"]);
   const [manualCity, setManualCity] = useState("");
   const [showManualInput, setShowManualInput] = useState(false);
   const [placePredictions, setPlacePredictions] = useState<PlacePrediction[]>([]);
@@ -209,7 +211,7 @@ export default function OnboardingPage() {
     );
   };
 
-  const toggleMissionType = (type: "outdoor" | "indoor" | "social") => {
+  const toggleQuestType = (type: "outdoor" | "indoor" | "social") => {
     setPreferredTypes((prev) =>
       prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
     );
@@ -220,7 +222,7 @@ export default function OnboardingPage() {
       hasCompletedOnboarding: true,
       location,
       interests: selectedInterests,
-      preferredMissionTypes: preferredTypes,
+      preferredQuestTypes: preferredTypes,
     };
     localStorage.setItem("vibequest_preferences", JSON.stringify(preferences));
     router.push("/");
@@ -229,9 +231,9 @@ export default function OnboardingPage() {
   const canComplete = selectedInterests.length >= 2;
 
   return (
-    <main className="h-[100dvh] safe-top safe-x bg-[#fafafa] flex flex-col overflow-hidden">
+    <main className="h-full bg-[#fafafa] flex flex-col overflow-hidden">
       {/* Progress Bar */}
-      <div className="fixed top-0 left-0 right-0 h-1.5 bg-[#e5e5e5]">
+      <div className="h-1.5 bg-[#e5e5e5] flex-shrink-0">
         <motion.div
           className="h-full bg-[#ff6b9d] hard-border-b"
           initial={{ width: "0%" }}
@@ -253,8 +255,8 @@ export default function OnboardingPage() {
             exit={{ opacity: 0, y: -20 }}
             className="flex flex-col items-center justify-center flex-1 px-5 overflow-y-auto"
           >
-            <div className="w-16 h-16 rounded-xl bg-[#ff6b9d] hard-border hard-shadow flex items-center justify-center mb-6">
-              <span className="text-3xl">🎯</span>
+            <div className="w-20 h-20 rounded-2xl hard-border hard-shadow flex items-center justify-center mb-6 overflow-hidden">
+              <Logo size={80} />
             </div>
 
             <h1 className="text-2xl font-black text-[#1a1a1a] text-center mb-3 tracking-tight">
@@ -262,16 +264,17 @@ export default function OnboardingPage() {
             </h1>
 
             <p className="text-sm text-[#666] text-center mb-8 max-w-xs font-medium leading-relaxed">
-              Missions tailored to your location & interests. Just a few quick questions!
+              There&apos;s a side quest near you right now. You don&apos;t know what it is yet — but you&apos;re about to!
             </p>
 
-            <button
-              onClick={withTap(() => setStep("location"), "medium")}
-              className="flex items-center gap-2 px-8 py-4 bg-[#1a1a1a] text-white font-black text-base rounded-xl tap-target hard-border hard-shadow hard-shadow-hover transition-all"
+            <Button
+              onClick={() => setStep("location")}
+              size="lg"
+              variant="primary"
+              className="bg-[#c084fc] text-white"
             >
-              Get Started
-              <ArrowRight className="w-4 h-4" />
-            </button>
+              Let&apos;s Go!
+            </Button>
           </motion.div>
         )}
 
@@ -282,26 +285,27 @@ export default function OnboardingPage() {
             initial={{ opacity: 0, x: 100 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -100 }}
-            className="flex flex-col flex-1 px-5 py-8 overflow-hidden"
+            className="flex flex-col flex-1 px-5 py-6 overflow-hidden"
           >
-            <div className="flex-1">
+            {/* Scrollable Content Area */}
+            <div className="flex-1 overflow-y-auto min-h-0 -mx-5 px-5">
               <div className="w-12 h-12 rounded-xl bg-[#22d3ee] hard-border hard-shadow flex items-center justify-center mb-4">
                 <MapPin className="w-6 h-6 text-[#1a1a1a]" />
               </div>
 
               <h2 className="text-xl font-black text-[#1a1a1a] mb-2 tracking-tight">Where are you?</h2>
               <p className="text-xs text-[#666] font-medium mb-6">
-                We&apos;ll suggest nearby missions—parks, cafes, hidden gems.
+                We&apos;ll suggest nearby quests—parks, cafes, hidden gems.
               </p>
 
               {location ? (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="bg-[#a3e635] hard-border hard-shadow rounded-xl p-4"
+                  className="bg-[#a3e635] border-2 border-[#1a1a1a] hard-shadow rounded-xl p-4"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-white hard-border flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-lg bg-white border-2 border-[#1a1a1a] flex items-center justify-center">
                       <Check className="w-5 h-5 text-[#1a1a1a]" />
                     </div>
                     <div>
@@ -313,15 +317,13 @@ export default function OnboardingPage() {
                   </div>
                 </motion.div>
               ) : (
-                <button
-                  onClick={withTap(requestLocation, "medium")}
+                <Button
+                  onClick={requestLocation}
                   disabled={isLocating}
-                  className={cn(
-                    "w-full flex items-center justify-center gap-2 py-4 rounded-xl font-black text-sm tap-target transition-all hard-border hard-shadow",
-                    isLocating
-                      ? "bg-[#e5e5e5] text-[#999] cursor-not-allowed shadow-none"
-                      : "bg-[#c084fc] text-white hard-shadow-hover"
-                  )}
+                  size="md"
+                  variant="primary"
+                  fullWidth
+                  className="bg-[#c084fc] py-4"
                 >
                   {isLocating ? (
                     <>
@@ -334,7 +336,7 @@ export default function OnboardingPage() {
                       Share Location
                     </>
                   )}
-                </button>
+                </Button>
               )}
 
               {locationError && (
@@ -352,7 +354,7 @@ export default function OnboardingPage() {
                       className="w-full flex items-center justify-center gap-1.5 py-3 text-[#666] hover:text-[#1a1a1a] font-bold text-xs tap-target transition-colors"
                     >
                       <Building2 className="w-3.5 h-3.5" />
-                      Or enter city manually
+                      Or enter location manually
                     </button>
                   ) : (
                     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-2 relative">
@@ -367,7 +369,7 @@ export default function OnboardingPage() {
                               setShowPredictions(true);
                             }}
                             onFocus={() => setShowPredictions(true)}
-                            placeholder="Search for a city..."
+                            placeholder="Search for a city or area..."
                             className="w-full pl-10 pr-3 py-3 bg-white hard-border rounded-lg text-sm text-[#1a1a1a] placeholder:text-[#999] focus:outline-none focus:ring-2 focus:ring-[#ff6b9d] font-bold"
                             autoFocus
                           />
@@ -426,20 +428,25 @@ export default function OnboardingPage() {
               </button>
             </div>
 
-            <div className="flex gap-2 mt-4">
-              <button
-                onClick={withTap(() => setStep("welcome"), "light")}
-                className="flex-1 py-3 rounded-xl bg-white text-[#1a1a1a] font-black hard-border tap-target hover:-translate-y-0.5 transition-all text-sm"
+            {/* Fixed Bottom Buttons */}
+            <div className="flex gap-2 pt-4 flex-shrink-0 bg-[#fafafa]">
+              <Button
+                onClick={() => setStep("welcome")}
+                size="sm"
+                variant="secondary"
+                className="flex-1"
               >
                 Back
-              </button>
-              <button
-                onClick={withTap(() => setStep("interests"), "medium")}
-                className="flex-1 py-3 rounded-xl bg-[#1a1a1a] text-white font-black hard-border hard-shadow tap-target flex items-center justify-center gap-1.5 hard-shadow-hover text-sm"
+              </Button>
+              <Button
+                onClick={() => setStep("interests")}
+                disabled={!location}
+                size="sm"
+                variant="primary"
+                className="flex-1 bg-[#c084fc] text-white"
               >
                 Next
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
+              </Button>
             </div>
           </motion.div>
         )}
@@ -451,38 +458,36 @@ export default function OnboardingPage() {
             initial={{ opacity: 0, x: 100 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -100 }}
-            className="flex flex-col flex-1 px-5 py-8 overflow-hidden"
+            className="flex flex-col flex-1 px-5 py-6 overflow-hidden"
           >
+            {/* Fixed Header */}
             <div className="flex-shrink-0">
               <div className="w-12 h-12 rounded-xl bg-[#fbbf24] hard-border hard-shadow flex items-center justify-center mb-4">
                 <span className="text-2xl">💖</span>
               </div>
 
               <h2 className="text-xl font-black text-[#1a1a1a] mb-2 tracking-tight">What do you love?</h2>
-              <p className="text-xs text-[#666] font-medium mb-5">Pick at least 2. We&apos;ll match missions to you.</p>
+              <p className="text-xs text-[#666] font-medium mb-5">Pick at least 2. We&apos;ll match quests to you.</p>
 
-              {/* Mission Type Preference */}
+              {/* Quest Type Preference */}
               <div className="mb-4">
-                <p className="text-xs font-black text-[#1a1a1a] mb-2">Mission types</p>
+                <p className="text-xs font-black text-[#1a1a1a] mb-2">Quest types</p>
                 <div className="flex flex-wrap gap-2">
                   {[
                     { value: "outdoor" as const, label: "Outdoor", icon: Compass, color: "bg-[#22d3ee]" },
                     { value: "indoor" as const, label: "Indoor", icon: BookOpen, color: "bg-[#c084fc]" },
                     { value: "social" as const, label: "Social", icon: Users, color: "bg-[#ff6b9d]" },
                   ].map((type) => (
-                    <button
+                    <SelectablePill
                       key={type.value}
-                      onClick={() => toggleMissionType(type.value)}
-                      className={cn(
-                        "flex items-center gap-1.5 px-3 py-2 rounded-lg border-2 border-[#1a1a1a] tap-target transition-all hard-shadow-sm text-xs",
-                        preferredTypes.includes(type.value)
-                          ? `${type.color} text-white hard-shadow -translate-y-1`
-                          : "bg-white text-[#1a1a1a] hover:-translate-y-0.5"
-                      )}
+                      onClick={() => toggleQuestType(type.value)}
+                      selected={preferredTypes.includes(type.value)}
+                      selectedClassName={type.color}
+                      ariaLabel={type.label}
                     >
                       <type.icon className="w-3.5 h-3.5" />
-                      <span className="font-bold">{type.label}</span>
-                    </button>
+                      <span>{type.label}</span>
+                    </SelectablePill>
                   ))}
                 </div>
               </div>
@@ -492,8 +497,8 @@ export default function OnboardingPage() {
               </p>
             </div>
 
-            {/* Scrollable Interests Grid */}
-            <div className="flex-1 overflow-y-auto min-h-0 -mx-5 px-5">
+            {/* Scrollable Interests Grid Only */}
+            <div className="flex-1 overflow-y-auto min-h-0 -mx-5 px-5 pt-2">
               <div className="grid grid-cols-2 gap-2 pb-4">
                 {interests.map((interest, idx) => {
                   const isSelected = selectedInterests.includes(interest.value);
@@ -503,10 +508,10 @@ export default function OnboardingPage() {
                       key={interest.value}
                       onClick={() => toggleInterest(interest.value)}
                       className={cn(
-                        "p-3 rounded-lg border-2 border-[#1a1a1a] text-left tap-target transition-all duration-200 hard-shadow-sm",
+                        "p-3 rounded-xl border-2 border-[#1a1a1a] text-left tap-target transition-all duration-200 hard-shadow-sm",
                         isSelected
-                          ? `${colorClass} text-white hard-shadow -translate-y-1`
-                          : "bg-white text-[#1a1a1a] hover:-translate-y-0.5"
+                          ? `${colorClass} text-white hard-shadow -translate-y-0.5`
+                          : "bg-white text-[#1a1a1a] hard-shadow-hover"
                       )}
                     >
                       <div className="flex items-center justify-between mb-1">
@@ -523,25 +528,25 @@ export default function OnboardingPage() {
               </div>
             </div>
 
-            <div className="flex gap-2 mt-4 flex-shrink-0">
-              <button
+            {/* Fixed Bottom Buttons */}
+            <div className="flex gap-2 pt-4 flex-shrink-0 bg-[#fafafa]">
+              <Button
                 onClick={() => setStep("location")}
-                className="flex-1 py-3 rounded-xl bg-white text-[#1a1a1a] font-black hard-border tap-target hover:-translate-y-0.5 transition-all text-sm"
+                size="sm"
+                variant="secondary"
+                className="flex-1"
               >
                 Back
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => setStep("ready")}
                 disabled={!canComplete}
-                className={cn(
-                  "flex-1 py-3 rounded-xl font-black hard-border hard-shadow tap-target transition-all text-sm",
-                  canComplete
-                    ? "bg-[#ff6b9d] text-white hard-shadow-hover"
-                    : "bg-[#e5e5e5] text-[#999] cursor-not-allowed shadow-none"
-                )}
+                size="sm"
+                variant="primary"
+                className="flex-1 bg-[#c084fc] text-white"
               >
-                Continue
-              </button>
+                Confirm
+              </Button>
             </div>
           </motion.div>
         )}
@@ -567,7 +572,7 @@ export default function OnboardingPage() {
             <h2 className="text-xl font-black text-[#1a1a1a] text-center mb-2 tracking-tight">You&apos;re Set!</h2>
 
             <p className="text-xs text-[#666] text-center mb-6 max-w-xs font-medium">
-              Finding missions near <span className="text-[#ff6b9d] font-black">{location?.city || "you"}</span> that match your vibe.
+              Finding quests near <span className="text-[#ff6b9d] font-black">{location?.city || "you"}</span> that match your vibe.
             </p>
 
             <div className="flex flex-wrap justify-center gap-1.5 mb-6 max-w-[280px]">
@@ -587,13 +592,15 @@ export default function OnboardingPage() {
               )}
             </div>
 
-            <button
+            <Button
               onClick={completeOnboarding}
-              className="flex items-center gap-2 px-8 py-4 bg-[#1a1a1a] text-white font-black text-sm rounded-xl tap-target hard-border hard-shadow hard-shadow-hover transition-all"
+              size="lg"
+              variant="primary"
+              className="bg-[#c084fc] text-white"
             >
               Start Questing
               <ArrowRight className="w-4 h-4" />
-            </button>
+            </Button>
           </motion.div>
         )}
       </AnimatePresence>

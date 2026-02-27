@@ -6,12 +6,13 @@ import { Heart, MessageCircle, Dices, Users, ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useTapFeedback } from "../hooks/useTapFeedback";
+import { IconButton, Button } from "../components/Button";
 import type { FeedItem } from "@/lib/types";
 
 const mockFeedItems: FeedItem[] = [
   {
     id: "1",
-    mission_title: "Sunset Photography Walk",
+    quest_title: "Sunset Photography Walk",
     reflection: "Found a beautiful hidden garden I never knew existed. The golden hour light was perfect.",
     author_name: "Alex",
     completed_at: "2024-01-15T14:30:00Z",
@@ -19,7 +20,7 @@ const mockFeedItems: FeedItem[] = [
   },
   {
     id: "2",
-    mission_title: "Try a New Coffee Shop",
+    quest_title: "Try a New Coffee Shop",
     reflection: "The barista recommended an Ethiopian single origin. Game changer!",
     author_name: "Jordan",
     completed_at: "2024-01-15T12:15:00Z",
@@ -27,7 +28,7 @@ const mockFeedItems: FeedItem[] = [
   },
   {
     id: "3",
-    mission_title: "Park Bench Meditation",
+    quest_title: "Park Bench Meditation",
     reflection: "10 minutes of just watching clouds. Felt surprisingly restorative.",
     author_name: "Sam",
     completed_at: "2024-01-14T18:45:00Z",
@@ -35,7 +36,7 @@ const mockFeedItems: FeedItem[] = [
   },
   {
     id: "4",
-    mission_title: "Sketch a Building",
+    quest_title: "Sketch a Building",
     reflection: "My perspective drawing needs work, but I noticed architectural details I'd never seen before.",
     author_name: "Casey",
     completed_at: "2024-01-14T16:20:00Z",
@@ -43,7 +44,7 @@ const mockFeedItems: FeedItem[] = [
   },
   {
     id: "5",
-    mission_title: "Explore a New Neighborhood",
+    quest_title: "Explore a New Neighborhood",
     reflection: "Got lost on purpose and found the cutest bookstore cafe.",
     author_name: "Morgan",
     completed_at: "2024-01-13T11:00:00Z",
@@ -114,7 +115,7 @@ function FeedCard({
         </div>
       </div>
 
-      <h3 className="text-sm font-black text-[#ff6b9d] mb-1">{item.mission_title}</h3>
+      <h3 className="text-sm font-black text-[#ff6b9d] mb-1">{item.quest_title}</h3>
       <p className="text-xs text-[#666] font-medium leading-relaxed mb-3">{item.reflection}</p>
 
       <div className="flex items-center justify-between">
@@ -136,8 +137,8 @@ function FeedCard({
         </div>
 
         <button
-          onClick={() => onTryThis(item.mission_title)}
-          className="flex items-center gap-1 px-2.5 py-1.5 bg-[#22d3ee] border-2 border-[#1a1a1a] rounded-lg text-[#1a1a1a] text-[10px] font-black tap-target hard-shadow-sm hover:-translate-y-0.5 transition-all"
+          onClick={() => onTryThis(item.quest_title)}
+          className="flex items-center gap-1 px-2.5 py-1.5 bg-[#22d3ee] border-2 border-[#1a1a1a] rounded-lg text-[#1a1a1a] text-[10px] font-black tap-target hard-shadow-sm hard-shadow-hover transition-all duration-200"
         >
           <Dices className="w-3 h-3" />
           Try This
@@ -195,16 +196,16 @@ export default function FeedPage() {
     };
   }, [loadMore]);
 
-  const handleTryThis = (missionTitle: string) => {
+  const handleTryThis = (questTitle: string) => {
     sessionStorage.setItem(
-      "missionRequest",
+      "questRequest",
       JSON.stringify({
         duration: 30,
         mood: "adventurous",
         energy: "medium",
       })
     );
-    window.location.href = "/missions";
+    window.location.href = "/quests";
   };
 
   return (
@@ -212,13 +213,12 @@ export default function FeedPage() {
       {/* Header */}
       <header className="px-5 pt-5 pb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <button
+          <IconButton
             onClick={withTap(() => router.push("/profile"), "light")}
-            className="w-9 h-9 rounded-lg bg-white hard-border hard-shadow-sm flex items-center justify-center text-[#1a1a1a] tap-target hover:-translate-y-0.5 transition-all"
-            aria-label="Back to Profile"
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </button>
+            icon={ArrowLeft}
+            ariaLabel="Back to Profile"
+            variant="secondary"
+          />
           <div>
             <h1 className="text-lg font-black text-[#1a1a1a] tracking-tight">Community Vibes</h1>
             <p className="text-xs font-medium text-[#666]">See what others are exploring</p>

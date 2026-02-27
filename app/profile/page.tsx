@@ -3,12 +3,13 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Settings, Trophy, Target, Flame, Zap, User, ArrowLeft, Pencil } from "lucide-react";
+import { Settings, Trophy, Target, Flame, Zap, User, ArrowLeft, Pencil, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTapFeedback } from "../hooks/useTapFeedback";
-import type { UserProfile, UserPreferences, Interest } from "@/lib/types";
+import { Button } from "../components/Button";
+import type { UserProfile, UserPreferences, Interest, CompletedQuest } from "@/lib/types";
 
-// TODO: Consolidate - VALID_INTERESTS is duplicated in profile/page.tsx, settings/page.tsx, and missions/page.tsx
+// TODO: Consolidate - VALID_INTERESTS is duplicated in profile/page.tsx, settings/page.tsx, and quests/page.tsx
 // Move to lib/constants.ts in future cleanup
 const VALID_INTERESTS: Interest[] = [
   "creative", "music_sound", "movement_body", "food_drink", "culture_knowledge",
@@ -67,7 +68,7 @@ const mockUser: UserProfile = {
     knowledge: 56,
     discipline: 71,
   },
-  completed_missions: 23,
+  completed_quests: 23,
 };
 
 // XP Progress Ring
@@ -181,8 +182,16 @@ const statColors = {
 export default function ProfilePage() {
   const [user] = useState<UserProfile>(mockUser);
   const [preferences, setPreferences] = useState<UserPreferences | null>(null);
+  const [completedQuests, setCompletedQuests] = useState<CompletedQuest[]>([]);
   const router = useRouter();
   const { withTap } = useTapFeedback();
+
+  useEffect(() => {
+    const stored = localStorage.getItem("vibequest_completed_quests");
+    if (stored) {
+      setCompletedQuests(JSON.parse(stored));
+    }
+  }, []);
 
   useEffect(() => {
     const stored = localStorage.getItem("vibequest_preferences");
@@ -211,22 +220,24 @@ export default function ProfilePage() {
       {/* Header */}
       <header className="px-5 pt-5 pb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <button
-            onClick={withTap(() => router.push("/"), "light")}
-            className="w-9 h-9 rounded-lg bg-white hard-border hard-shadow-sm flex items-center justify-center text-[#1a1a1a] tap-target hover:-translate-y-0.5 transition-all"
-            aria-label="Back to Quests"
+          <Button
+            onClick={() => router.push("/")}
+            size="icon"
+            variant="secondary"
+            ariaLabel="Back to Quests"
           >
             <ArrowLeft className="w-4 h-4" />
-          </button>
+          </Button>
           <h1 className="text-lg font-black text-[#1a1a1a] tracking-tight">Profile</h1>
         </div>
-        <button
-          onClick={withTap(() => router.push("/settings"), "light")}
-          className="w-9 h-9 rounded-lg bg-white hard-border hard-shadow-sm flex items-center justify-center text-[#1a1a1a] tap-target hover:-translate-y-0.5 transition-all"
-          aria-label="Settings"
+        <Button
+          onClick={() => router.push("/settings")}
+          size="icon"
+          variant="secondary"
+          ariaLabel="Settings"
         >
           <Settings className="w-4 h-4" />
-        </button>
+        </Button>
       </header>
 
       <div className="px-5 space-y-6">
@@ -252,7 +263,7 @@ export default function ProfilePage() {
         {/* Interests Rail */}
         {preferences?.interests && preferences.interests.length > 0 && (
           <section>
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <div className="w-6 h-6 rounded-md bg-[#ff6b9d] hard-border flex items-center justify-center">
                   <span className="text-[10px]">💖</span>
@@ -260,7 +271,7 @@ export default function ProfilePage() {
                 <h2 className="text-xs font-black text-[#1a1a1a] uppercase tracking-wider">Your Vibes</h2>
               </div>
               <button
-                onClick={withTap(() => router.push("/settings?tab=interests"), "light")}
+                onClick={() => router.push("/settings?tab=interests")}
                 className="flex items-center gap-1 text-xs font-bold text-[#666] hover:text-[#1a1a1a] transition-colors tap-target"
               >
                 <Pencil className="w-3 h-3" />
@@ -304,13 +315,22 @@ export default function ProfilePage() {
 
         {/* Stats Summary */}
         <section className="grid grid-cols-2 gap-3">
-          <div className="bg-[#a3e635] border-2 border-[#1a1a1a] rounded-xl p-3 text-center hard-shadow">
-            <span className="text-2xl font-black text-[#1a1a1a]">{user.completed_missions}</span>
-            <p className="text-xs font-black text-[#1a1a1a]/70 mt-0.5">Missions Done</p>
-          </div>
-          <div className="bg-[#22d3ee] border-2 border-[#1a1a1a] rounded-xl p-3 text-center hard-shadow">
-            <span className="text-2xl font-black text-[#1a1a1a]">{Math.floor(user.xp / 50)}</span>
-            <p className="text-xs font-black text-[#1a1a1a]/70 mt-0.5">Hours Active</p>
+          <Button
+            onClick={() => router.push("/quests/history")}
+            size="lg"
+            variant="success"
+            className="h-auto py-3"
+          >
+            <div className="text-center">
+              <span className="text-2xl font-black text-[#1a1a1a]">{completedQuests.length || user.completed_quests}</span>
+              <p className="text-xs font-black text-[#1a1a1a]/70 mt-0.5">Quests Done</p>
+            </div>
+          </Button>
+          <div className="bg-[#22d3ee] border-2 border-[#1a1a1a] rounded-xl p-3 text-center hard-shadow flex items-center justify-center">
+            <div>
+              <span className="text-2xl font-black text-[#1a1a1a]">{Math.floor(user.xp / 50)}</span>
+              <p className="text-xs font-black text-[#1a1a1a]/70 mt-0.5">Hours Active</p>
+            </div>
           </div>
         </section>
 
@@ -323,20 +343,37 @@ export default function ProfilePage() {
             <div>
               <h3 className="text-xs font-black text-[#1a1a1a]">Momentum</h3>
               <p className="text-xs font-black text-[#1a1a1a]/70 mt-0.5 leading-relaxed">
-                Complete missions to build momentum. Higher momentum gives you a small XP bonus.
+                Complete quests to build momentum. Higher momentum gives you a small XP bonus.
               </p>
             </div>
           </div>
         </section>
 
-        {/* Dev: Feed Link */}
-        <div className="pt-4 border-t border-[#e5e5e5]">
-          <button
-            onClick={() => router.push("/feed")}
-            className="w-full text-center text-xs text-[#999] hover:text-[#666] font-medium py-2 transition-colors"
-          >
-            Dev: Feed
-          </button>
+        {/* Dev Options */}
+        <div className="pt-4 border-t border-[#e5e5e5] space-y-2">
+          <p className="text-xs font-bold text-[#666] uppercase tracking-wider">Dev Options</p>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => router.push("/feed")}
+              size="sm"
+              variant="secondary"
+              className="flex-1"
+            >
+              Feed
+            </Button>
+            <Button
+              onClick={() => {
+                localStorage.removeItem("vibequest_preferences");
+                router.push("/onboarding");
+              }}
+              size="sm"
+              variant="danger"
+              className="flex-1"
+            >
+              <RotateCcw className="w-3 h-3" />
+              Reset Onboarding
+            </Button>
+          </div>
         </div>
       </div>
     </main>

@@ -22,7 +22,8 @@ export async function GET(request: NextRequest) {
     const url = new URL("https://maps.googleapis.com/maps/api/place/autocomplete/json");
     url.searchParams.set("input", input);
     url.searchParams.set("key", GOOGLE_MAPS_API_KEY);
-    url.searchParams.set("types", "(cities)");
+    // Allow cities and localities (neighborhoods, districts, etc.)
+    url.searchParams.set("types", "(regions)");
 
     const response = await fetch(url.toString());
     const data = await response.json();

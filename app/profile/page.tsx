@@ -180,7 +180,7 @@ const statColors = {
 };
 
 export default function ProfilePage() {
-  const [user] = useState<UserProfile>(mockUser);
+  const [user, setUser] = useState<UserProfile>(mockUser);
   const [preferences, setPreferences] = useState<UserPreferences | null>(null);
   const [completedQuests, setCompletedQuests] = useState<CompletedQuest[]>([]);
   const router = useRouter();
@@ -190,6 +190,17 @@ export default function ProfilePage() {
     const stored = localStorage.getItem("vibequest_completed_quests");
     if (stored) {
       setCompletedQuests(JSON.parse(stored));
+    }
+  }, []);
+
+  useEffect(() => {
+    // Load user profile from localStorage (updated by quest completion)
+    const storedProfile = localStorage.getItem("vibequest_profile");
+    if (storedProfile) {
+      setUser(JSON.parse(storedProfile));
+    } else {
+      // Initialize profile from mockUser if not exists
+      localStorage.setItem("vibequest_profile", JSON.stringify(mockUser));
     }
   }, []);
 

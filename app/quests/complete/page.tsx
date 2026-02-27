@@ -95,14 +95,14 @@ function AnimatedNumber({ value, duration = 1000 }: { value: number; duration?: 
 function StatBar({
   label,
   value,
-  max = 25,
   color,
 }: {
   label: string;
   value: number;
-  max?: number;
   color: string;
 }) {
+  // Auto-detect scale: values 0-2 use max=2, values >2 use max=25 (legacy support)
+  const max = value <= 2 ? 2 : 25;
   const percentage = Math.min((value / max) * 100, 100);
 
   return (
@@ -176,6 +176,28 @@ export default function QuestCompletePage() {
           const parsedPrefs = JSON.parse(prefs);
           parsedPrefs.completedQuestsCount = (parsedPrefs.completedQuestsCount || 0) + 1;
           localStorage.setItem("vibequest_preferences", JSON.stringify(parsedPrefs));
+        }
+
+        // Update user stats with quest rewards
+        const profile = localStorage.getItem("vibequest_profile");
+        if (profile && parsed.quest?.intrinsic_rewards) {
+          const parsedProfile = JSON.parse(profile);
+          const rewards = parsed.quest.intrinsic_rewards;
+
+          // Add rewards to stats (handle both 0-2 and 0-25 scales)
+          // Scale up 0-2 values to 0-25 for display consistency
+          const scale = (val: number) => val <= 2 ? val * 10 : val;
+
+          parsedProfile.stats = {
+            fitness: Math.min(100, (parsedProfile.stats?.fitness || 0) + scale(rewards.fitness)),
+            calm: Math.min(100, (parsedProfile.stats?.calm || 0) + scale(rewards.calm)),
+            creativity: Math.min(100, (parsedProfile.stats?.creativity || 0) + scale(rewards.creativity)),
+            social: Math.min(100, (parsedProfile.stats?.social || 0) + scale(rewards.social)),
+            knowledge: Math.min(100, (parsedProfile.stats?.knowledge || 0) + scale(rewards.knowledge)),
+            discipline: Math.min(100, (parsedProfile.stats?.discipline || 0) + scale(rewards.discipline)),
+          };
+
+          localStorage.setItem("vibequest_profile", JSON.stringify(parsedProfile));
         }
       }
     }

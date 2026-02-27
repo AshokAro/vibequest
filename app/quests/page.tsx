@@ -129,8 +129,9 @@ function QuestCard({
   });
 
   const getRewardStyle = (value: number) => {
-    if (value >= 15) return "bg-[#a3e635] text-[#1a1a1a]";
-    if (value >= 10) return "bg-[#22d3ee] text-[#1a1a1a]";
+    // Handle both old scale (0-25) and new scale (0-2)
+    if (value >= 2 || value >= 15) return "bg-[#a3e635] text-[#1a1a1a]";
+    if (value >= 1 || value >= 10) return "bg-[#22d3ee] text-[#1a1a1a]";
     return "bg-[#e5e5e5] text-[#666]";
   };
 

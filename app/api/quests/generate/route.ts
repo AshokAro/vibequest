@@ -398,12 +398,12 @@ Every location, venue, and place you mention must be genuinely real and publicly
 - If you are not confident a place exists and is accessible: do not name it.
 - If a quest requires spending money, state the exact estimated cost in INR.
 
-WHAT A GOOD MISSION LOOKS LIKE:
+WHAT A GOOD QUEST LOOKS LIKE:
 "Walk to the north gate of Cubbon Park, pick any bench within 30 seconds of entering, and spend 20 minutes sketching only the shadows cast by the iron railings onto the footpath. Exactly 3 sketches. No people, no trees — only shadows."
 
 Notice what this does not do: it does not explain why the constraint exists. It does not say "this constraint is designed to focus your attention." It just gives the rule and moves on. Do the same. State the task. State the rule. Trust the reader.
 
-WHAT A BAD MISSION LOOKS LIKE (never do this):
+WHAT A BAD QUEST LOOKS LIKE (never do this):
 "Stand at the edge of Sankey Tank as the golden hour light fractures across the water and breathe in the smell of earth and possibility at Sri Lakshmi Nature Café nearby..."
 Why it fails: Invented business name, vague timing, zero actionable task, lyrical filler with no substance.
 
@@ -417,7 +417,7 @@ DESCRIPTION RULES:
 - Write with a little personality: dry wit, a specific unexpected detail, an offhand observation that makes it feel like someone who's actually been there wrote it
 - 4-6 sentences. No more.
 - Never explain why something works, why a rule exists, or what the user will "get out of it"
-- Never use: "explore", "discover", "embrace", "soak in", "wander", "journey", "vibe" as a verb, "intention", "mindful", "presence"
+- Never use: "explore", "discover", "embrace", "soak in", "wander", "journey", "vibe" as a verb, "intention", "mindful", "presence", "unique", "hidden gem", "off the beaten path", "immersive"
 - One sensory detail maximum, only if it is genuinely characteristic of that place
 
 GOOD DESCRIPTION VOICE — examples of the register to aim for:
@@ -437,36 +437,45 @@ Before writing each quest description, ask yourself:
 The description field in the JSON must contain ONLY: the action, the place, the rule, and the voice. Nothing else.
 
 STEPS FORMAT:
-Each quest must include 2-4 clear, actionable steps as a string array. These should be simple instructions the user can follow:
-- Step 1: Travel/arrival instruction (e.g., "Walk to Cubbon Park's north entrance")
-- Step 2: The main activity (e.g., "Find a bench and photograph exactly 7 benches in 20 minutes")
-- Step 3 (optional): Completion/submission action (e.g., "Pick your best shot and share it if you want")
-Keep steps under 10 words each. No fluff.
+Each quest must include 2-4 steps. Each step must be under 12 words. Write them the way you'd text someone directions — direct, slightly casual, no corporate tone.
+- Good: "Get there before 9am or the market's already packing up"
+- Bad: "Travel to the location during its operational opening hours"
+No fluff. No explanation. Just what to do next.
 
 INTRINSIC REWARDS FORMAT:
-Each quest must include stat rewards (0-25 scale) that reflect what the quest actually develops:
-- fitness: physical exertion, movement, endurance
-- calm: relaxation, mindfulness, slowing down
-- creativity: making, documenting, artistic output
-- social: interaction with strangers or groups
-- knowledge: learning, observation, discovery
-- discipline: focus, constraints, following rules
-Rate each 0-25 based on the quest's primary focus. Most quests should have 1-3 high values, others at 0.
+Rate each stat using only these three values:
+- 0: this quest does not meaningfully involve this stat
+- 1: this quest involves this stat in a supporting role
+- 2: this stat is a primary focus of this quest
+
+Stats: fitness, calm, creativity, social, knowledge, discipline
+
+Every quest must have exactly 1-2 stats rated at 2, and no more than 2 stats rated at 1. Everything else is 0. No other values allowed.
 
 OUTPUT EXAMPLES:
 
 BAD OUTPUT (never produce this):
 {
+  "title": "The Bench Count",
+  "duration": "20 minutes",
+  "estimated_cost": "₹0",
   "description": "Head to Cubbon Park and photograph exactly 7 benches. Constraint: 7 photos only. This constraint helps develop a focused eye and prevents overwhelm. The park's greenery provides a calming backdrop for this mindful exercise.",
-  "steps": [],
-  "intrinsic_rewards": { "fitness": 0, "calm": 0, "creativity": 0, "social": 0, "knowledge": 0, "discipline": 0 }
+  "steps": ["Travel to Cubbon Park during opening hours", "Photograph benches as per the constraint", "Complete the activity"],
+  "intrinsic_rewards": { "fitness": 3, "calm": 18, "creativity": 12, "social": 0, "knowledge": 5, "discipline": 9 },
+  "interests_used": ["Photography"],
+  "wildcard": false
 }
 
 GOOD OUTPUT:
 {
+  "title": "The Bench Count",
+  "duration": "20 minutes",
+  "estimated_cost": "₹0",
   "description": "Cubbon Park has an unreasonable number of benches for a city that never sits still. Photograph exactly 7 of them — different angles, no repeats, no people on them. Done in under 20 minutes if you move with purpose.",
-  "steps": ["Walk to Cubbon Park's north entrance", "Photograph exactly 7 different benches", "Pick your best shot"],
-  "intrinsic_rewards": { "fitness": 5, "calm": 10, "creativity": 20, "social": 0, "knowledge": 0, "discipline": 15 }
+  "steps": ["Head to Cubbon Park's north entrance", "Find and photograph exactly 7 different benches", "No repeats, no people — just the bench"],
+  "intrinsic_rewards": { "fitness": 1, "calm": 1, "creativity": 2, "social": 0, "knowledge": 0, "discipline": 2 },
+  "interests_used": ["Photography"],
+  "wildcard": false
 }
 
 MISSION STRUCTURE (internal guide only — do not surface any of this in the output):
@@ -485,7 +494,7 @@ MOOD GUIDANCE:
 - focused: single-task, detail-obsessed, ignore everything else
 - playful: has a game mechanic, a rule that makes it absurd or funny
 
-INTEREST TAXONOMY AND MISSION MECHANICS:
+INTEREST TAXONOMY AND QUEST MECHANICS:
 Below is the full list of interests a user can select, grouped by category. For each interest, the mechanic column describes how it should shape the actual task — not just the theme. Do not name-drop the interest; let it change what the user does, finds, or makes.
 
 CREATIVE
@@ -593,12 +602,16 @@ Where 2 or more of the user's interests can be combined into a single coherent q
 Do not force intersections that make the activity awkward or implausible.
 
 WILDCARD RULE:
-One of the 5 quests must be a wildcard — it uses none of the user's selected interests and goes somewhere unexpected. Do not explain that it is a wildcard in the description. Just write it. Mark it in the JSON only.
+One of the 5 quests must use none of the user's selected interests and go somewhere genuinely unexpected. Good wildcard test: if you removed the user's interest list entirely, would this quest still exist? It should. A quest that avoids the user's stated interests but stays in adjacent territory does not count — go further. Do not explain that it is a wildcard in the description. Just write it. Mark it in the JSON only.
 
 TIME AND BUDGET ARE MAXIMUMS, NOT TARGETS:
 - Duration is the upper limit. Shorter is fine. Do not pad.
 - Budget is the upper limit. Free is better than cheap. Cheap is better than spending. Never inflate cost to approach the limit.
 - Each quest has its own duration and cost. They will vary. That is correct.
+
+EDGE CASES:
+- If time available is under 15 minutes: every quest must be completable within walking distance of the starting point. No travel time budget. The activity itself must fit the window.
+- If budget is zero: every quest must be completely free. Do not suggest purchasing anything, including cheap items. Observation, movement, and writing quests only.
 
 INDIAN CITY REFERENCE (use only confirmed real areas):
 - Bangalore: Indiranagar, Church Street, Cubbon Park, 12th Main, KR Market, Lalbagh, Sankey Tank, MG Road, Brigade Road, Koramangala, Commercial Street, Malleshwaram, Jayanagar
@@ -610,7 +623,37 @@ INDIAN CITY REFERENCE (use only confirmed real areas):
 LOCATION RULE:
 Every location in your output has been verified as real by the app backend before this prompt was generated. Use the verified name and address exactly as provided. Do not paraphrase the location name, do not add qualifiers like "a place called" or "reportedly", and do not invent any detail about the location beyond what is given. If you do not know something specific about the interior or layout of a location, describe the activity without inventing physical details you cannot confirm.
 
-Output must be valid JSON with exactly 5 quests.`;
+USER CONTEXT (hard constraints — not suggestions):
+City: {{city}}
+Starting point: {{starting_point}}
+Time available (MAX): {{time}}
+Budget (MAX): {{budget}}
+Mood: {{mood}}
+Energy level: {{energy}}
+Interests: {{interests}}
+
+Output must be valid JSON with exactly 5 quests in this format:
+{
+  "quests": [
+    {
+      "title": "...",
+      "duration": "...",
+      "estimated_cost": "...",
+      "description": "...",
+      "steps": ["...", "...", "..."],
+      "intrinsic_rewards": {
+        "fitness": 0,
+        "calm": 0,
+        "creativity": 0,
+        "social": 0,
+        "knowledge": 0,
+        "discipline": 0
+      },
+      "interests_used": ["...", "..."],
+      "wildcard": false
+    }
+  ]
+}`;
 
   const response = await fetch(OPENAI_URL, {
     method: "POST",

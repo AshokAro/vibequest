@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { Play, Pause, RotateCcw, Check, MapPin, ChevronDown, ChevronUp, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTapFeedback } from "../../hooks/useTapFeedback";
 import type { Mission } from "@/lib/types";
 
 function formatTime(seconds: number): string {
@@ -15,11 +16,12 @@ function formatTime(seconds: number): string {
 
 export default function ActiveMissionPage() {
   const router = useRouter();
+  const { withTap, triggerHaptic } = useTapFeedback();
   const [mission, setMission] = useState<Mission | null>(null);
   const [secondsElapsed, setSecondsElapsed] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
   const [showCompleteConfirm, setShowCompleteConfirm] = useState(false);
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -65,10 +67,12 @@ export default function ActiveMissionPage() {
   }, [isRunning]);
 
   const toggleStep = useCallback((index: number) => {
-    setCompletedSteps((prev) =>
-      prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]
-    );
-  }, []);
+    setCompletedSteps((prev) => {
+      const isCompleting = !prev.includes(index);
+      triggerHaptic(isCompleting ? "success" : "light");
+      return isCompleting ? [...prev, index] : prev.filter((i) => i !== index);
+    });
+  }, [triggerHaptic]);
 
   const handleComplete = useCallback(() => {
     const completionData = {
@@ -117,7 +121,7 @@ export default function ActiveMissionPage() {
 
           <div className="flex items-center justify-center gap-3 mt-4">
             <button
-              onClick={() => setSecondsElapsed(0)}
+              onClick={withTap(() => setSecondsElapsed(0), "light")}
               className="w-10 h-10 rounded-lg bg-white hard-border flex items-center justify-center text-[#666] tap-target hover:-translate-y-0.5 transition-all"
               aria-label="Reset timer"
             >
@@ -125,7 +129,7 @@ export default function ActiveMissionPage() {
             </button>
 
             <button
-              onClick={() => setIsRunning(!isRunning)}
+              onClick={withTap(() => setIsRunning(!isRunning), "medium")}
               className={cn(
                 "w-14 h-14 rounded-xl flex items-center justify-center tap-target transition-all duration-200 hard-border",
                 isRunning
@@ -162,11 +166,12 @@ export default function ActiveMissionPage() {
         </div>
       </section>
 
-      {/* Steps Checklist */}
+      {/* Steps Checklist - Only show if there are steps */}
+      {mission.steps.length > 0 && (
       <section className="px-5">
         <div className="bg-white border-2 border-[#1a1a1a] rounded-xl overflow-hidden hard-shadow">
           <button
-            onClick={() => setExpanded(!expanded)}
+            onClick={withTap(() => setExpanded(!expanded), "light")}
             className="w-full flex items-center justify-between p-3 tap-target"
           >
             <span className="font-black text-[#1a1a1a] text-sm">Mission Steps</span>
@@ -228,6 +233,7 @@ export default function ActiveMissionPage() {
           </AnimatePresence>
         </div>
       </section>
+      )}
 
       {/* XP Reward */}
       <section className="px-5 mt-5 mb-4">
@@ -241,7 +247,7 @@ export default function ActiveMissionPage() {
       <div className="px-5 pb-4">
         {!showCompleteConfirm ? (
           <button
-            onClick={() => setShowCompleteConfirm(true)}
+            onClick={withTap(() => setShowCompleteConfirm(true), "medium")}
             disabled={!allStepsCompleted}
             className={cn(
               "w-full py-3.5 rounded-xl font-black tap-target transition-all duration-200 border-2",
@@ -259,13 +265,13 @@ export default function ActiveMissionPage() {
             className="flex gap-2"
           >
             <button
-              onClick={() => setShowCompleteConfirm(false)}
+              onClick={withTap(() => setShowCompleteConfirm(false), "light")}
               className="flex-1 py-3.5 rounded-xl font-black bg-white border-2 border-[#1a1a1a] text-[#1a1a1a] tap-target hard-shadow-sm hover:-translate-y-0.5 transition-all"
             >
               Cancel
             </button>
             <button
-              onClick={handleComplete}
+              onClick={withTap(handleComplete, "success")}
               className="flex-1 py-3.5 rounded-xl font-black bg-[#ff6b9d] border-2 border-[#1a1a1a] text-white hard-shadow hard-shadow-hover tap-target"
             >
               Confirm

@@ -419,11 +419,20 @@ export default function MissionsPage() {
   return (
     <main className="h-full safe-top safe-x bg-[#fafafa] flex flex-col overflow-hidden touch-none">
       {/* Header */}
-      <header className="px-5 pt-5 pb-3 flex-shrink-0">
-        <h1 className="text-2xl font-black text-[#1a1a1a] tracking-tight">Pick One</h1>
-        <p className="text-sm text-[#666] font-medium mt-1">
-          {request ? `${request.duration} min • ${request.mood}` : "Swipe to browse"}
-        </p>
+      <header className="px-5 pt-5 pb-3 flex-shrink-0 flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-black text-[#1a1a1a] tracking-tight">Pick One</h1>
+          <p className="text-sm text-[#666] font-medium mt-1">
+            {request ? `${request.duration} min • ${request.mood}` : "Swipe to browse"}
+          </p>
+        </div>
+        <button
+          onClick={() => router.push("/")}
+          className="w-10 h-10 rounded-xl bg-white hard-border hard-shadow-sm flex items-center justify-center text-[#1a1a1a] tap-target hover:-translate-y-0.5 transition-all"
+          aria-label="Close"
+        >
+          <X className="w-5 h-5" />
+        </button>
       </header>
 
       {/* Card Stack - Fixed height container */}

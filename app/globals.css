@@ -213,6 +213,25 @@ body {
   overscroll-behavior-y: none;
 }
 
+/* Hide scrollbars globally but keep scroll functionality */
+html {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+html::-webkit-scrollbar {
+  display: none;
+}
+
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+*::-webkit-scrollbar {
+  display: none;
+}
+
 /* Hide range slider thumb */
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;

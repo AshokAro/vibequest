@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Settings, Trophy, Target, Flame, Zap, User, ArrowLeft, Pencil, RotateCcw } from "lucide-react";
+import { Settings, Dumbbell, Wind, Palette, Users, BookOpen, Target, Flame, Zap, User, ArrowLeft, Pencil, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTapFeedback } from "../hooks/useTapFeedback";
 import { Button } from "../components/Button";
@@ -304,11 +304,11 @@ export default function ProfilePage() {
           </div>
 
           <div className="bg-white border-2 border-[#1a1a1a] rounded-xl p-4 space-y-3 hard-shadow">
-            <StatBar label="fitness" value={user.stats.fitness} color={statColors.fitness} icon={Trophy} />
-            <StatBar label="calm" value={user.stats.calm} color={statColors.calm} icon={Target} />
-            <StatBar label="creativity" value={user.stats.creativity} color={statColors.creativity} icon={Target} />
-            <StatBar label="social" value={user.stats.social} color={statColors.social} icon={Target} />
-            <StatBar label="knowledge" value={user.stats.knowledge} color={statColors.knowledge} icon={Target} />
+            <StatBar label="fitness" value={user.stats.fitness} color={statColors.fitness} icon={Dumbbell} />
+            <StatBar label="calm" value={user.stats.calm} color={statColors.calm} icon={Wind} />
+            <StatBar label="creativity" value={user.stats.creativity} color={statColors.creativity} icon={Palette} />
+            <StatBar label="social" value={user.stats.social} color={statColors.social} icon={Users} />
+            <StatBar label="knowledge" value={user.stats.knowledge} color={statColors.knowledge} icon={BookOpen} />
             <StatBar label="discipline" value={user.stats.discipline} color={statColors.discipline} icon={Target} />
           </div>
         </section>

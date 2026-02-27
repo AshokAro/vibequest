@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   MapPin,
   ArrowLeft,
@@ -66,10 +66,15 @@ const interestColors = [
 
 type SettingsTab = "location" | "interests";
 
-export default function SettingsPage() {
+// Inner component that uses useSearchParams
+function SettingsContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { withTap } = useTapFeedback();
-  const [activeTab, setActiveTab] = useState<SettingsTab>("location");
+  const [activeTab, setActiveTab] = useState<SettingsTab>(() => {
+    const tabParam = searchParams.get("tab");
+    return tabParam === "interests" ? "interests" : "location";
+  });
   const [preferences, setPreferences] = useState<UserPreferences | null>(null);
   const [location, setLocation] = useState<UserPreferences["location"]>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
@@ -446,5 +451,18 @@ export default function SettingsPage() {
         </motion.div>
       )}
     </main>
+  );
+}
+
+// Wrapper component with Suspense for useSearchParams
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={
+      <main className="h-full safe-top safe-x bg-[#fafafa] flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-[#ff6b9d] border-t-transparent rounded-full animate-spin" />
+      </main>
+    }>
+      <SettingsContent />
+    </Suspense>
   );
 }

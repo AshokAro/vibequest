@@ -260,7 +260,7 @@ export default function ProfilePage() {
                 <h2 className="text-xs font-black text-[#1a1a1a] uppercase tracking-wider">Your Vibes</h2>
               </div>
               <button
-                onClick={withTap(() => router.push("/settings"), "light")}
+                onClick={withTap(() => router.push("/settings?tab=interests"), "light")}
                 className="flex items-center gap-1 text-xs font-bold text-[#666] hover:text-[#1a1a1a] transition-colors tap-target"
               >
                 <Pencil className="w-3 h-3" />

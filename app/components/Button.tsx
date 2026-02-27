@@ -3,7 +3,7 @@
 import { cn } from "@/lib/utils";
 import { ReactNode } from "react";
 
-type ButtonSize = "sm" | "md" | "lg" | "icon" | "pill";
+type ButtonSize = "sm" | "md" | "lg" | "icon";
 type ButtonVariant = "primary" | "secondary" | "success" | "danger";
 
 interface ButtonProps {

@@ -856,7 +856,7 @@ function parseAIResponse(content: string, request: QuestRequest): Quest[] {
 
     // Use AI-provided intrinsic rewards if available, otherwise calculate based on interests/mood
     const interestsUsed = (quest.interests_used as string[]) || [];
-    const aiRewards = quest.intrinsic_rewards as Record<string, number> | undefined;
+    const aiRewards = (quest.intrinsic_rewards || quest.stats) as Record<string, number> | undefined;
     const intrinsicRewards = aiRewards ? {
       fitness: Math.min(25, Math.max(0, aiRewards.fitness || 0)),
       calm: Math.min(25, Math.max(0, aiRewards.calm || 0)),

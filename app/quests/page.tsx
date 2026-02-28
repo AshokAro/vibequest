@@ -40,14 +40,14 @@ const statIcons: Record<string, React.ElementType> = {
   discipline: Target,
 };
 
-// Stat colors from profile page
+// Stat colors from profile page (discipline uses gray instead of black for black text visibility)
 const statColors: Record<string, string> = {
   fitness: "bg-[#a3e635]",
   calm: "bg-[#22d3ee]",
   creativity: "bg-[#ff6b9d]",
   social: "bg-[#fbbf24]",
   knowledge: "bg-[#c084fc]",
-  discipline: "bg-[#1a1a1a]",
+  discipline: "bg-[#94a3b8]",
 };
 
 // Mood to emoji mapping for quest cards
@@ -273,7 +273,7 @@ function QuestCard({
                       className={cn(
                         "flex items-center gap-1.5 px-2 py-1.5 rounded-lg hard-border",
                         statColors[key] || "bg-[#e5e5e5]",
-                        "text-white"
+                        "text-[#1a1a1a]"
                       )}
                       title={`${key}: ${isMajor ? 'Major' : 'Minor'}`}
                     >

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { Sparkles, Share2, User, Check } from "lucide-react";
+import { Sparkles, Share2, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTapFeedback } from "../../hooks/useTapFeedback";
 import { Button } from "../../components/Button";
@@ -146,8 +146,7 @@ export default function QuestCompletePage() {
   } | null>(null);
   const [showConfetti, setShowConfetti] = useState(true);
 
-  // Feedback state - pre-selected defaults
-  const [actuallyCompleted, setActuallyCompleted] = useState(true);
+  // Feedback state
   const [rating, setRating] = useState<Rating>("good");
 
   const handleConfettiComplete = useCallback(() => {
@@ -241,8 +240,8 @@ export default function QuestCompletePage() {
         interests_used: completion.quest.interests_used || [],
         wildcard: completion.quest.is_wildcard || false,
         completed_at: new Date().toISOString(),
-        actually_completed: actuallyCompleted,
-        rating: actuallyCompleted ? rating : null,
+        actually_completed: true,
+        rating: rating,
       };
 
       // Save to completion history for AI prompt analysis
@@ -258,16 +257,6 @@ export default function QuestCompletePage() {
 
     // Navigate home
     router.push("/");
-  };
-
-  const handleActuallyCompleted = (value: boolean) => {
-    triggerHaptic("light");
-    setActuallyCompleted(value);
-    if (!value) {
-      setRating(null);
-    } else if (rating === null) {
-      setRating("good");
-    }
   };
 
   const handleRating = (value: Rating) => {
@@ -371,66 +360,30 @@ export default function QuestCompletePage() {
         transition={{ delay: 0.55 }}
         className="w-full max-w-[280px] space-y-4 mb-5"
       >
-        {/* Did you do it? */}
+        {/* How was it? */}
         <div className="space-y-2">
-          <span className="text-xs text-[#666] font-bold">Did you actually go?</span>
-          <div className="flex gap-2">
-            <button
-              onClick={() => handleActuallyCompleted(true)}
-              className={cn(
-                "flex-1 py-2.5 px-3 rounded-xl border-2 font-bold text-sm transition-all duration-200 tap-target",
-                actuallyCompleted
-                  ? "bg-[#a3e635] border-[#1a1a1a] hard-shadow"
-                  : "bg-white border-[#e5e5e5] text-[#666]"
-              )}
-            >
-              Went and did it ✅
-            </button>
-            <button
-              onClick={() => handleActuallyCompleted(false)}
-              className={cn(
-                "flex-1 py-2.5 px-3 rounded-xl border-2 font-bold text-sm transition-all duration-200 tap-target",
-                !actuallyCompleted
-                  ? "bg-[#ff6b9d] border-[#1a1a1a] text-white hard-shadow"
-                  : "bg-white border-[#e5e5e5] text-[#666]"
-              )}
-            >
-              Not this time 👋
-            </button>
+          <span className="text-xs text-[#666] font-bold">How was it?</span>
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { emoji: "😐", value: "meh" as const },
+              { emoji: "🙂", value: "good" as const },
+              { emoji: "🤩", value: "loved_it" as const },
+            ].map(({ emoji, value }) => (
+              <button
+                key={value}
+                onClick={() => handleRating(value)}
+                className={cn(
+                  "flex items-center justify-center px-2 py-3 rounded-xl border-2 border-[#1a1a1a] tap-target transition-all duration-200 hard-shadow-sm",
+                  rating === value
+                    ? "bg-[#fbbf24] text-[#1a1a1a] hard-shadow -translate-y-0.5"
+                    : "bg-white text-[#1a1a1a] hard-shadow-hover"
+                )}
+              >
+                <span className="text-xl">{emoji}</span>
+              </button>
+            ))}
           </div>
         </div>
-
-        {/* How was it? - Only show if completed */}
-        {actuallyCompleted && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="space-y-2"
-          >
-            <span className="text-xs text-[#666] font-bold">How was it?</span>
-            <div className="flex gap-2">
-              {[
-                { emoji: "😐", value: "meh" as const },
-                { emoji: "🙂", value: "good" as const },
-                { emoji: "🤩", value: "loved_it" as const },
-              ].map(({ emoji, value }) => (
-                <button
-                  key={value}
-                  onClick={() => handleRating(value)}
-                  className={cn(
-                    "flex-1 py-3 rounded-xl border-2 text-2xl transition-all duration-200 tap-target",
-                    rating === value
-                      ? "bg-white border-[#1a1a1a] hard-shadow scale-105"
-                      : "bg-white border-[#e5e5e5] opacity-60"
-                  )}
-                >
-                  {emoji}
-                </button>
-              ))}
-            </div>
-          </motion.div>
-        )}
       </motion.div>
 
       {/* Action Buttons */}
@@ -438,39 +391,22 @@ export default function QuestCompletePage() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.6 }}
-        className="w-full max-w-[280px] space-y-2"
+        className="w-full max-w-[280px] grid grid-cols-2 gap-3"
       >
-        <Button
+        <button
           onClick={handleShare}
-          size="md"
-          variant="secondary"
-          fullWidth
-          className="py-3"
+          className="flex items-center justify-center gap-2 px-2 py-3 rounded-xl border-2 border-[#1a1a1a] bg-white text-[#1a1a1a] tap-target transition-all duration-200 hard-shadow-hover"
         >
           <Share2 className="w-4 h-4" />
-          Share Your Win
-        </Button>
-
-        <div className="flex gap-2">
-          <Button
-            onClick={() => router.push("/profile")}
-            size="md"
-            variant="secondary"
-            className="flex-1 py-3"
-          >
-            <User className="w-4 h-4" />
-            My Stats
-          </Button>
-          <Button
-            onClick={handleDone}
-            size="md"
-            variant="primary"
-            className="flex-1 py-3 bg-[#ff6b9d]"
-          >
-            <Check className="w-4 h-4" />
-            Done
-          </Button>
-        </div>
+          <span className="text-sm font-black">Share the W</span>
+        </button>
+        <button
+          onClick={handleDone}
+          className="flex items-center justify-center gap-2 px-2 py-3 rounded-xl border-2 border-[#1a1a1a] bg-[#ff6b9d] text-[#1a1a1a] tap-target transition-all duration-200 hard-shadow"
+        >
+          <Check className="w-4 h-4" />
+          <span className="text-sm font-black">Done</span>
+        </button>
       </motion.div>
     </main>
   );

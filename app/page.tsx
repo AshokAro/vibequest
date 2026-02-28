@@ -23,8 +23,8 @@ const moods: { value: Mood; label: string; emoji: string; bg: string }[] = [
 const feelingLucky = { value: "random" as const, label: "Feeling Lucky", emoji: "🎲", bg: "bg-[#ff6b9d]" };
 
 const energyLevels = [
-  { value: "low", label: "Low", description: "Take it easy", color: "bg-cyan-400" },
-  { value: "medium", label: "Medium", description: "Balanced", color: "bg-yellow-400" },
+  { value: "low", label: "Low", description: "Take it easy", color: "bg-emerald-400" },
+  { value: "medium", label: "Medium", description: "Balanced", color: "bg-blue-400" },
   { value: "high", label: "High", description: "Full Send!", color: "bg-rose-400" },
 ];
 
@@ -220,7 +220,7 @@ export default function HomePage() {
                 <span className="text-sm font-black">{level.label}</span>
                 <span className={cn(
                   "text-[10px] font-medium",
-                  energy === level.value ? "text-white/70" : "text-[#1a1a1a]/70"
+                  energy === level.value ? "text-white" : "text-[#1a1a1a]/70"
                 )}>{level.description}</span>
               </button>
             ))}

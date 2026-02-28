@@ -536,12 +536,16 @@ No fluff. No explanation. Just what to do next.
 INTRINSIC REWARDS FORMAT:
 Rate each stat using only these three values:
 - 0: this quest does not meaningfully involve this stat
-- 1: this quest involves this stat in a supporting role
-- 2: this stat is a primary focus of this quest
+- 1: this quest involves this stat in a supporting role (minor stat)
+- 2: this stat is a primary focus of this quest (major stat)
 
 Stats: fitness, calm, creativity, social, knowledge, discipline
 
-Every quest must have exactly 1-2 stats rated at 2, and no more than 2 stats rated at 1. Everything else is 0. No other values allowed.
+Every quest must have exactly 1 major stat (rated at 2) and exactly 1 minor stat (rated at 1). Everything else is 0. No other values allowed.
+
+Display rules:
+- Major stat: shown prominently with full color
+- Minor stat: shown with muted/subdued styling
 
 OUTPUT EXAMPLES:
 
@@ -564,7 +568,7 @@ GOOD OUTPUT:
   "estimated_cost": "₹0",
   "description": "Cubbon Park has an unreasonable number of benches for a city that never sits still. Photograph exactly 7 of them — different angles, no repeats, no people on them. Done in under 20 minutes if you move with purpose.",
   "steps": ["Head to Cubbon Park's north entrance", "Find and photograph exactly 7 different benches", "No repeats, no people — just the bench"],
-  "intrinsic_rewards": { "fitness": 1, "calm": 1, "creativity": 2, "social": 0, "knowledge": 0, "discipline": 2 },
+  "intrinsic_rewards": { "fitness": 0, "calm": 0, "creativity": 2, "social": 0, "knowledge": 0, "discipline": 1 },
   "interests_used": ["Photography"],
   "wildcard": false
 }

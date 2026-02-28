@@ -148,26 +148,30 @@ function QuestCard({
     <motion.div
       className={cn(
         "absolute inset-x-4 top-0 mx-auto w-auto",
-        isTop ? "z-10" : "z-0 scale-95 opacity-50"
+        isTop ? "z-10" : "z-0 scale-95"
       )}
       style={{
         transform: isTop
           ? `translateX(${position.x}px) translateY(${position.y}px) rotate(${rotation}deg)`
           : undefined,
-        opacity: isTop ? opacity : undefined,
       }}
       {...(isTop ? handlers : {})}
     >
       <div
         className={cn(
-          "rounded-2xl border-2 overflow-hidden tap-target no-select hard-shadow flex flex-col",
+          "rounded-2xl border-2 overflow-hidden tap-target no-select hard-shadow flex flex-col bg-white",
           isWildcard
             ? "bg-gradient-to-br from-[#ff6b9d]/10 via-white to-[#c084fc]/10 border-[#ff6b9d]"
             : "bg-white border-[#1a1a1a]",
-          isTop ? "cursor-grab active:cursor-grabbing" : "opacity-50 scale-95"
+          isTop ? "cursor-grab active:cursor-grabbing" : "scale-95"
         )}
         style={{ height: 'calc(100vh - 240px)', maxHeight: '480px' }}
       >
+        {/* Content wrapper with swipe opacity */}
+        <div
+          className="flex flex-col h-full"
+          style={{ opacity: isTop ? opacity : 1 }}
+        >
         {/* Card Header - Emoji center, XP right */}
         <div className="relative px-4 pt-6 pb-4 flex-shrink-0">
           {/* Wildcard Badge - Top Left */}
@@ -242,29 +246,34 @@ function QuestCard({
             </div>
           </div>
 
-          {/* Rewards - Icon + Value */}
+          {/* Rewards - Major and Minor stats */}
           <div className="px-4 py-3">
             <div className="flex items-center justify-start gap-2">
               {Object.entries(quest.intrinsic_rewards)
                 .filter(([, value]) => value > 0)
+                .sort(([, a], [, b]) => b - a)
                 .map(([key, value]) => {
                   const Icon = statIcons[key] || Zap;
+                  const isMajor = value === 2;
                   return (
                     <div
                       key={key}
                       className={cn(
                         "flex items-center gap-1 px-2 py-1.5 rounded-lg hard-border",
-                        getRewardStyle(value)
+                        isMajor
+                          ? "bg-[#a3e635] text-[#1a1a1a]"
+                          : "bg-[#e5e5e5] text-[#666]"
                       )}
-                      title={`${key}: +${value}`}
+                      title={`${key}: ${isMajor ? 'Major' : 'Minor'}`}
                     >
                       <Icon className="w-3.5 h-3.5" />
-                      <span className="text-xs font-black">+{value}</span>
+                      <span className="text-xs font-black">{key}</span>
                     </div>
                   );
                 })}
             </div>
           </div>
+        </div>
         </div>
       </div>
     </motion.div>

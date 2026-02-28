@@ -96,20 +96,23 @@ function StatBar({
   label,
   value,
   color,
+  isMajor,
 }: {
   label: string;
   value: number;
   color: string;
+  isMajor: boolean;
 }) {
-  // Auto-detect scale: values 0-2 use max=2, values >2 use max=25 (legacy support)
-  const max = value <= 2 ? 2 : 25;
-  const percentage = Math.min((value / max) * 100, 100);
+  const percentage = isMajor ? 100 : 50;
 
   return (
-    <div className="space-y-1">
+    <div className={cn("space-y-1", !isMajor && "opacity-60")}>
       <div className="flex items-center justify-between text-xs">
-        <span className="text-[#666] font-bold capitalize">{label}</span>
-        <span className={cn("font-black", color)}>+{value}</span>
+        <span className={cn("font-bold capitalize", isMajor ? "text-[#1a1a1a]" : "text-[#666]")}>
+          {label}
+          {!isMajor && <span className="ml-1 text-[10px]">(minor)</span>}
+        </span>
+        <span className={cn("font-black", color)}>+{isMajor ? 2 : 1}</span>
       </div>
       <div className="h-2 bg-[#e5e5e5] rounded-full overflow-hidden hard-border">
         <motion.div
@@ -332,24 +335,18 @@ export default function QuestCompletePage() {
           transition={{ delay: 0.5 }}
           className="w-full max-w-[280px] space-y-2 mb-5"
         >
-          {rewards.fitness > 0 && (
-            <StatBar label="fitness" value={rewards.fitness} color={statColors.fitness} />
-          )}
-          {rewards.calm > 0 && (
-            <StatBar label="calm" value={rewards.calm} color={statColors.calm} />
-          )}
-          {rewards.creativity > 0 && (
-            <StatBar label="creativity" value={rewards.creativity} color={statColors.creativity} />
-          )}
-          {rewards.social > 0 && (
-            <StatBar label="social" value={rewards.social} color={statColors.social} />
-          )}
-          {rewards.knowledge > 0 && (
-            <StatBar label="knowledge" value={rewards.knowledge} color={statColors.knowledge} />
-          )}
-          {rewards.discipline > 0 && (
-            <StatBar label="discipline" value={rewards.discipline} color={statColors.discipline} />
-          )}
+          {Object.entries(rewards)
+            .filter(([, value]) => value > 0)
+            .sort(([, a], [, b]) => b - a)
+            .map(([key, value]) => (
+              <StatBar
+                key={key}
+                label={key}
+                value={value}
+                color={statColors[key]}
+                isMajor={value === 2}
+              />
+            ))}
         </motion.div>
       )}
 
@@ -395,14 +392,14 @@ export default function QuestCompletePage() {
       >
         <button
           onClick={handleShare}
-          className="flex items-center justify-center gap-2 px-2 py-3 rounded-xl border-2 border-[#1a1a1a] bg-white text-[#1a1a1a] tap-target transition-all duration-200 hard-shadow-hover"
+          className="flex items-center justify-center gap-2 px-2 py-3 rounded-xl border-2 border-[#1a1a1a] bg-white text-[#1a1a1a] tap-target transition-all duration-200 hard-shadow hard-shadow-hover"
         >
           <Share2 className="w-4 h-4" />
           <span className="text-sm font-black">Share the W</span>
         </button>
         <button
           onClick={handleDone}
-          className="flex items-center justify-center gap-2 px-2 py-3 rounded-xl border-2 border-[#1a1a1a] bg-[#ff6b9d] text-[#1a1a1a] tap-target transition-all duration-200 hard-shadow"
+          className="flex items-center justify-center gap-2 px-2 py-3 rounded-xl border-2 border-[#1a1a1a] bg-[#ff6b9d] text-white tap-target transition-all duration-200 hard-shadow"
         >
           <Check className="w-4 h-4" />
           <span className="text-sm font-black">Done</span>

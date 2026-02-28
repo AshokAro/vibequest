@@ -40,6 +40,16 @@ const statIcons: Record<string, React.ElementType> = {
   discipline: Target,
 };
 
+// Stat colors from profile page
+const statColors: Record<string, string> = {
+  fitness: "bg-[#a3e635]",
+  calm: "bg-[#22d3ee]",
+  creativity: "bg-[#ff6b9d]",
+  social: "bg-[#fbbf24]",
+  knowledge: "bg-[#c084fc]",
+  discipline: "bg-[#1a1a1a]",
+};
+
 // Mood to emoji mapping for quest cards
 const questEmojis: Record<string, string> = {
   chill: "🌿",
@@ -246,7 +256,7 @@ function QuestCard({
             </div>
           </div>
 
-          {/* Rewards - Major and Minor stats */}
+          {/* Rewards - Major (+20) and Minor (+10) stats */}
           <div className="px-4 py-3">
             <div className="flex items-center justify-start gap-2">
               {Object.entries(quest.intrinsic_rewards)
@@ -260,14 +270,13 @@ function QuestCard({
                       key={key}
                       className={cn(
                         "flex items-center gap-1 px-2 py-1.5 rounded-lg hard-border",
-                        isMajor
-                          ? "bg-[#a3e635] text-[#1a1a1a]"
-                          : "bg-[#e5e5e5] text-[#666]"
+                        statColors[key] || "bg-[#e5e5e5]",
+                        key === "discipline" ? "text-white" : "text-[#1a1a1a]"
                       )}
                       title={`${key}: ${isMajor ? 'Major' : 'Minor'}`}
                     >
                       <Icon className="w-3.5 h-3.5" />
-                      <span className="text-xs font-black">{key}</span>
+                      <span className="text-xs font-black">+{isMajor ? 20 : 10}</span>
                     </div>
                   );
                 })}

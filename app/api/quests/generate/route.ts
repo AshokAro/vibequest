@@ -541,11 +541,14 @@ Rate each stat using only these three values:
 
 Stats: fitness, calm, creativity, social, knowledge, discipline
 
-Every quest must have exactly 1 major stat (rated at 2) and exactly 1 minor stat (rated at 1). Everything else is 0. No other values allowed.
+CRITICAL RULE - EXACTLY 2 STATS:
+Every quest must have EXACTLY 2 stats with non-zero values:
+- 1 major stat rated at 2
+- 1 minor stat rated at 1
+- ALL other stats MUST be 0
 
-Display rules:
-- Major stat: shown prominently with full color
-- Minor stat: shown with muted/subdued styling
+If you generate more than 2 non-zero stats, the quest is invalid.
+If you generate fewer than 2 non-zero stats, the quest is invalid.
 
 OUTPUT EXAMPLES:
 

@@ -132,6 +132,11 @@ function QuestCard({
 }) {
   const [expanded, setExpanded] = useState(false);
 
+  // Debug: Log quest rewards when card renders
+  useEffect(() => {
+    console.log(`[QuestCard] "${quest.title}" rewards:`, quest.intrinsic_rewards);
+  }, [quest]);
+
   const { position, rotation, opacity, handlers } = useSwipe({
     onSwipeLeft: onDiscard,
     onSwipeRight: onAccept,
@@ -419,6 +424,14 @@ export default function QuestsPage() {
       generateQuests();
     }
   }, [request, generateQuests]);
+
+  // Debug: Log quests state whenever it changes
+  useEffect(() => {
+    console.log("[Frontend] quests state updated:", quests.length, "quests");
+    quests.forEach((q, idx) => {
+      console.log(`[Frontend] Quest ${idx} (${q.title}):`, q.intrinsic_rewards);
+    });
+  }, [quests]);
 
   if (loading) {
     return (

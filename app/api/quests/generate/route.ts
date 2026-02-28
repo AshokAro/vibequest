@@ -1091,17 +1091,17 @@ function parseAIResponse(content: string, request: QuestRequest): Quest[] {
         "people": "👥", "person": "🧑", "man": "👨", "woman": "👩", "child": "👶",
         "friend": "🧑‍🤝‍🧑", "group": "👥", "crowd": "👥", "stranger": "🚶",
         // Materials
-        "wood": "🪵", "metal": "🔩", "glass": "🥃", "paper": "📄", "plastic": "🥤",
+        "wood": "🪵", "metal": "🔩", "glass": "🥃", "plastic": "🥤",
         // Shopping/Money
         "buy": "🛒", "sell": "🏷️", "price": "🏷️", "cheap": "💸", "expensive": "💎",
-        "thrift": "👕", "shop": "🛍️", "bargain": "💰", "negotiate": "🤝",
+        "thrift": "👕", "bargain": "💰", "negotiate": "🤝",
         // Documenting
         "note": "📝", "list": "📋", "journal": "📓", "diary": "📔", "record": "🎙️",
         // Transportation
-        "bus": "🚌", "train": "🚆", "metro": "🚇", "auto": "🛺", "walk": "🚶",
+        "bus": "🚌", "train": "🚆", "metro": "🚇", "auto": "🛺",
         // Specific items
-        "jasmine": "🌸", "flower": "🌺", "fabric": "🧵", "cloth": "🧶", "sari": "🥻",
-        "bench": "🪑", "chair": "🪑", "table": "🪑", "seat": "💺",
+        "jasmine": "🌸", "fabric": "🧵", "cloth": "🧶", "sari": "🥻",
+        "chair": "🪑", "table": "🪑", "seat": "💺",
         // Misc
         "shadow": "🌑", "light": "💡", "reflection": "🪞", "pattern": "🔲", "texture": "〰️",
         "old": "🏛️", "new": "✨", "ancient": "🏺", "modern": "🏢",

@@ -251,7 +251,7 @@ function QuestCard({
             </div>
             <div className="flex items-center justify-start gap-2 py-3 px-4">
               <div className="w-8 h-8 rounded-lg bg-[#ff6b9d] hard-border flex items-center justify-center flex-shrink-0">
-                <Zap className="w-4 h-4 text-white" />
+                <Zap className="w-4 h-4 text-[#1a1a1a]" />
               </div>
               <span className="text-sm font-black text-[#1a1a1a]">{getEnergyLabel(quest.effort.physical)}</span>
             </div>
@@ -266,17 +266,19 @@ function QuestCard({
                 .map(([key, value]) => {
                   const Icon = statIcons[key] || Zap;
                   const isMajor = value === 2;
+                  const statName = key.charAt(0).toUpperCase() + key.slice(1);
                   return (
                     <div
                       key={key}
                       className={cn(
-                        "flex items-center gap-1 px-2 py-1.5 rounded-lg hard-border",
+                        "flex items-center gap-1.5 px-2 py-1.5 rounded-lg hard-border",
                         statColors[key] || "bg-[#e5e5e5]",
-                        key === "discipline" ? "text-white" : "text-[#1a1a1a]"
+                        "text-white"
                       )}
                       title={`${key}: ${isMajor ? 'Major' : 'Minor'}`}
                     >
                       <Icon className="w-3.5 h-3.5" />
+                      <span className="text-xs font-black">{statName}</span>
                       <span className="text-xs font-black">+{isMajor ? 20 : 10}</span>
                     </div>
                   );

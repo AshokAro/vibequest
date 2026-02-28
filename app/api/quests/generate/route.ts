@@ -917,61 +917,65 @@ function parseAIResponse(content: string, request: QuestRequest): Quest[] {
     const aiRewards = (quest.intrinsic_rewards || quest.stats) as Record<string, number> | undefined;
     console.log(`[parseAIResponse] Quest ${idx} aiRewards:`, aiRewards);
 
-    // Normalize AI rewards to enforce exactly 1 major (2) and 1 minor (1) stat
+    // Normalize AI rewards - override with interest-based stats since AI returns generic stats
     function normalizeRewards(rewards: Record<string, number> | undefined): { fitness: number; calm: number; creativity: number; social: number; knowledge: number; discipline: number } {
-      if (!rewards) {
-        // Default fallback - creativity major, discipline minor
-        return { fitness: 0, calm: 0, creativity: 2, social: 0, knowledge: 0, discipline: 1 };
-      }
-
-      // Get all stat entries with their values
-      const entries = Object.entries(rewards)
-        .filter(([key]) => ["fitness", "calm", "creativity", "social", "knowledge", "discipline"].includes(key))
-        .map(([key, val]) => ({ key, value: Math.min(2, Math.max(0, Number(val) || 0)) }))
-        .sort((a, b) => b.value - a.value);
-
-      // Find major (highest value, min 1) and minor (second highest, min 1)
-      const major = entries.find(e => e.value >= 1);
-      const minor = entries.filter(e => e.key !== major?.key).find(e => e.value >= 1);
-
-      // Build normalized rewards
+      // Build stats based on quest-specific interests_used, not AI's generic response
       const normalized: Record<string, number> = {
         fitness: 0, calm: 0, creativity: 0, social: 0, knowledge: 0, discipline: 0
       };
 
-      if (major) {
-        normalized[major.key] = 2; // Major stat = 2
-      }
-      if (minor) {
-        normalized[minor.key] = 1; // Minor stat = 1
+      // Determine primary stat based on first interest
+      const primaryInterest = interestsUsed[0]?.toLowerCase() || "";
+
+      // Map interest to primary stat
+      const interestToStat: Record<string, string> = {
+        "running": "fitness",
+        "cycling": "fitness",
+        "hiking": "fitness",
+        "swimming": "fitness",
+        "strength_training": "fitness",
+        "yoga": "calm",
+        "photography": "creativity",
+        "sketching": "creativity",
+        "painting": "creativity",
+        "street_art": "creativity",
+        "journaling": "creativity",
+        "poetry": "creativity",
+        "talking_strangers": "social",
+        "people_watching": "social",
+        "community_events": "social",
+        "history": "knowledge",
+        "architecture": "knowledge",
+        "museums": "knowledge",
+        "languages": "knowledge",
+      };
+
+      const primaryStat = interestToStat[primaryInterest];
+
+      // Set primary stat based on first interest
+      if (primaryStat) {
+        normalized[primaryStat] = 2;
+      } else {
+        // Default primary based on mood
+        if (request.mood === "chill") normalized.calm = 2;
+        else if (request.mood === "creative") normalized.creativity = 2;
+        else if (request.mood === "social") normalized.social = 2;
+        else normalized.creativity = 2; // Default
       }
 
-      // If we don't have both, pick defaults based on interests or quest type
-      if (!major || !minor) {
-        if (normalized.creativity === 0 && interestsUsed.some(i => ["photography", "sketching", "painting", "street_art", "journaling", "poetry"].includes(i.toLowerCase()))) {
-          if (!major) normalized.creativity = 2;
-          else if (!minor) normalized.creativity = 1;
-        }
-        if (normalized.fitness === 0 && interestsUsed.some(i => ["running", "cycling", "hiking", "swimming", "strength_training"].includes(i.toLowerCase()))) {
-          if (!major) normalized.fitness = 2;
-          else if (!minor) normalized.fitness = 1;
-        }
-        if (normalized.knowledge === 0 && interestsUsed.some(i => ["history", "architecture", "museums", "languages"].includes(i.toLowerCase()))) {
-          if (!major) normalized.knowledge = 2;
-          else if (!minor) normalized.knowledge = 1;
-        }
-        if (normalized.social === 0 && interestsUsed.some(i => ["talking_strangers", "people_watching", "community_events"].includes(i.toLowerCase()))) {
-          if (!major) normalized.social = 2;
-          else if (!minor) normalized.social = 1;
-        }
-        if (normalized.calm === 0 && (request.mood === "chill" || interestsUsed.includes("yoga"))) {
-          if (!major) normalized.calm = 2;
-          else if (!minor) normalized.calm = 1;
-        }
-        if (normalized.discipline === 0 && !minor) {
-          normalized.discipline = 1; // Default minor
-        }
+      // Set secondary stat based on second interest or default
+      const secondaryInterest = interestsUsed[1]?.toLowerCase() || "";
+      const secondaryStat = interestToStat[secondaryInterest];
+
+      if (secondaryStat && secondaryStat !== primaryStat) {
+        normalized[secondaryStat] = 1;
+      } else {
+        // Pick a different stat as minor
+        const possibleMinors = ["discipline", "calm", "knowledge", "social"].filter(s => s !== primaryStat);
+        normalized[possibleMinors[idx % possibleMinors.length]] = 1;
       }
+
+      console.log(`[normalizeRewards] Quest ${idx}: interests=${interestsUsed.join(",")}, stats=${JSON.stringify(normalized)}`);
 
       return {
         fitness: normalized.fitness,

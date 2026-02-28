@@ -830,6 +830,9 @@ function parseAIResponse(content: string, request: QuestRequest): Quest[] {
       throw new Error(`Quest ${idx} missing required fields`);
     }
 
+    // Log the intrinsic_rewards from AI
+    console.log(`[parseAIResponse] Quest ${idx} intrinsic_rewards:`, quest.intrinsic_rewards || quest.stats);
+
     // Parse duration from string (e.g., "20 min" -> 20)
     const durationStr = String(quest.duration || quest.duration_minutes || request.duration);
     const durationMatch = durationStr.match(/(\d+)/);

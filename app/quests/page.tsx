@@ -75,6 +75,7 @@ const loadingMessages = [
 ];
 
 // Mock quests for MVP - in production these come from API
+// Format: 1 major stat (2) + 1 minor stat (1), rest are 0
 const mockQuests: Quest[] = [
   {
     id: "1",
@@ -85,7 +86,7 @@ const mockQuests: Quest[] = [
     budget_estimate: 0,
     effort: { physical: 2, mental: 1 },
     location: { type: "nearby", suggestion: "Your neighborhood streets" },
-    intrinsic_rewards: { fitness: 5, calm: 10, creativity: 15, social: 0, knowledge: 0, discipline: 5 },
+    intrinsic_rewards: { fitness: 0, calm: 0, creativity: 2, social: 0, knowledge: 0, discipline: 1 },
     xp_reward: 85,
   },
   {
@@ -97,7 +98,7 @@ const mockQuests: Quest[] = [
     budget_estimate: 5,
     effort: { physical: 1, mental: 3 },
     location: { type: "nearby", suggestion: "Local coffee shop" },
-    intrinsic_rewards: { fitness: 0, calm: 15, creativity: 20, social: 5, knowledge: 0, discipline: 10 },
+    intrinsic_rewards: { fitness: 0, calm: 1, creativity: 2, social: 0, knowledge: 0, discipline: 0 },
     xp_reward: 110,
   },
   {
@@ -109,7 +110,7 @@ const mockQuests: Quest[] = [
     budget_estimate: 0,
     effort: { physical: 1, mental: 2 },
     location: { type: "nearby", suggestion: "Local park bench" },
-    intrinsic_rewards: { fitness: 0, calm: 25, creativity: 0, social: 0, knowledge: 0, discipline: 15 },
+    intrinsic_rewards: { fitness: 0, calm: 2, creativity: 0, social: 0, knowledge: 0, discipline: 1 },
     xp_reward: 95,
   },
 ];
@@ -259,9 +260,8 @@ function QuestCard({
           {/* Rewards - Major (+20) and Minor (+10) stats */}
           <div className="px-4 py-3">
             <div className="flex items-center justify-start gap-2">
-              {(() => { console.log("[QuestCard] Rendering stats, intrinsic_rewards:", quest.intrinsic_rewards); return null; })()}
               {Object.entries(quest.intrinsic_rewards || {})
-                .filter(([, value]) => { console.log("[QuestCard] Checking stat:", value); return value > 0; })
+                .filter(([, value]) => value > 0)
                 .sort(([, a], [, b]) => b - a)
                 .map(([key, value]) => {
                   const Icon = statIcons[key] || Zap;

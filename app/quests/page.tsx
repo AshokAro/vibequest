@@ -259,8 +259,9 @@ function QuestCard({
           {/* Rewards - Major (+20) and Minor (+10) stats */}
           <div className="px-4 py-3">
             <div className="flex items-center justify-start gap-2">
-              {Object.entries(quest.intrinsic_rewards)
-                .filter(([, value]) => value > 0)
+              {(() => { console.log("[QuestCard] Rendering stats, intrinsic_rewards:", quest.intrinsic_rewards); return null; })()}
+              {Object.entries(quest.intrinsic_rewards || {})
+                .filter(([, value]) => { console.log("[QuestCard] Checking stat:", value); return value > 0; })
                 .sort(([, a], [, b]) => b - a)
                 .map(([key, value]) => {
                   const Icon = statIcons[key] || Zap;

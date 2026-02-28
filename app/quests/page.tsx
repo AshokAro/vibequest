@@ -216,7 +216,7 @@ function QuestCard({
         className={cn(
           "rounded-2xl border-2 overflow-hidden tap-target no-select hard-shadow flex flex-col bg-white h-full",
           isWildcard
-            ? "bg-gradient-to-br from-[#ff6b9d]/10 via-white to-[#c084fc]/10 border-[#ff6b9d]"
+            ? "bg-gradient-to-br from-[#ffb3c7] via-[#ffffff] to-[#d9b3fc] border-[#ff6b9d]"
             : "bg-white border-[#1a1a1a]",
           isTop ? "cursor-grab active:cursor-grabbing" : ""
         )}

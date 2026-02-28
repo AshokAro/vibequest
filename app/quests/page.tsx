@@ -216,7 +216,7 @@ function QuestCard({
         className={cn(
           "rounded-2xl border-2 overflow-hidden tap-target no-select hard-shadow flex flex-col bg-white h-full",
           isWildcard
-            ? "bg-gradient-to-br from-[#ff6b9d] via-[#fbbf24] to-[#c084fc] border-[#1a1a1a]"
+            ? "bg-gradient-to-br from-[#ff6b9d]/10 via-white to-[#c084fc]/10 border-[#ff6b9d]"
             : "bg-white border-[#1a1a1a]",
           isTop ? "cursor-grab active:cursor-grabbing" : ""
         )}
@@ -236,7 +236,7 @@ function QuestCard({
           {/* Wildcard Badge - Top Left */}
           {isWildcard && (
             <div className="absolute top-4 left-4">
-              <div className="flex items-center gap-1 bg-[#1a1a1a] hard-border rounded-full px-2.5 py-1">
+              <div className="flex items-center gap-1 bg-gradient-to-r from-[#ff6b9d] to-[#c084fc] hard-border rounded-full px-2.5 py-1 shimmer-effect">
                 <Sparkles className="w-3 h-3 text-white relative z-10" />
                 <span className="text-xs font-black text-white relative z-10">WILDCARD</span>
               </div>

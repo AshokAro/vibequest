@@ -213,12 +213,15 @@ export default function HomePage() {
                 className={cn(
                   "flex flex-col items-center justify-center gap-1 px-2 py-3 rounded-xl border-2 border-[#1a1a1a] tap-target transition-all duration-200 hard-shadow-sm",
                   energy === level.value
-                    ? `${level.color} text-[#1a1a1a] hard-shadow -translate-y-0.5`
+                    ? `${level.color} text-white hard-shadow -translate-y-0.5`
                     : "bg-white text-[#1a1a1a] hard-shadow-hover"
                 )}
               >
                 <span className="text-sm font-black">{level.label}</span>
-                <span className="text-[10px] font-medium text-[#1a1a1a]/70">{level.description}</span>
+                <span className={cn(
+                  "text-[10px] font-medium",
+                  energy === level.value ? "text-white/70" : "text-[#1a1a1a]/70"
+                )}>{level.description}</span>
               </button>
             ))}
           </div>

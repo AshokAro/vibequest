@@ -859,7 +859,9 @@ function parseAIResponse(content: string, request: QuestRequest): Quest[] {
 
     // Use AI-provided intrinsic rewards if available, otherwise calculate based on interests/mood
     const interestsUsed = (quest.interests_used as string[]) || [];
+    console.log(`[parseAIResponse] Quest ${idx} raw rewards from AI:`, quest.intrinsic_rewards, "stats:", quest.stats);
     const aiRewards = (quest.intrinsic_rewards || quest.stats) as Record<string, number> | undefined;
+    console.log(`[parseAIResponse] Quest ${idx} aiRewards:`, aiRewards);
     const intrinsicRewards = aiRewards ? {
       fitness: Math.min(25, Math.max(0, aiRewards.fitness || 0)),
       calm: Math.min(25, Math.max(0, aiRewards.calm || 0)),
@@ -892,6 +894,8 @@ function parseAIResponse(content: string, request: QuestRequest): Quest[] {
       intrinsic_rewards: intrinsicRewards,
     });
     const wildcardBonus = isWildcard ? Math.max(25, Math.floor(baseXP * 0.25)) : 0;
+
+    console.log(`[API] Quest ${idx} final intrinsic_rewards:`, intrinsicRewards);
 
     const questData: Omit<Quest, "xp_reward"> = {
       id: `quest-${Date.now()}-${idx}`,

@@ -383,6 +383,8 @@ export default function QuestsPage() {
 
       const data = await response.json();
       console.log("[Frontend] Received quests:", data.quests?.length);
+      console.log("[Frontend] First quest intrinsic_rewards:", data.quests?.[0]?.intrinsic_rewards);
+      console.log("[Frontend] All quest rewards:", data.quests?.map((q: Quest) => q.intrinsic_rewards));
 
       // Save returned locations to cache for future use
       if (city && data.locations && data.locations.length > 0) {

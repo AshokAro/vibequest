@@ -550,6 +550,15 @@ Every quest must have EXACTLY 2 stats with non-zero values:
 If you generate more than 2 non-zero stats, the quest is invalid.
 If you generate fewer than 2 non-zero stats, the quest is invalid.
 
+STAT SELECTION RULES:
+Choose stats based on what the quest ACTUALLY involves:
+- fitness: running, cycling, hiking, physical challenges
+- calm: meditation, observation, quiet reflection, nature
+- creativity: photography, sketching, art, writing, making
+- social: talking to strangers, people watching, conversations
+- knowledge: learning, history, architecture, museums, research
+- discipline: repetition, counting, rules, structure, consistency
+
 OUTPUT EXAMPLES:
 
 BAD OUTPUT (never produce this):
@@ -564,7 +573,7 @@ BAD OUTPUT (never produce this):
   "wildcard": false
 }
 
-GOOD OUTPUT:
+GOOD OUTPUT (creative focus + discipline constraint):
 {
   "title": "The Bench Count",
   "duration": "20 minutes",
@@ -575,6 +584,51 @@ GOOD OUTPUT:
   "interests_used": ["Photography"],
   "wildcard": false
 }
+
+GOOD OUTPUT (knowledge focus + fitness minor):
+{
+  "title": "Architecture Detective",
+  "duration": "30 minutes",
+  "estimated_cost": "₹0",
+  "description": "Walk the length of Commercial Street and identify exactly 3 buildings with Art Deco features. Photograph one distinctive detail from each. Ask a shopkeeper if they know when the building was built.",
+  "steps": ["Walk Commercial Street looking for Art Deco", "Photograph 3 distinctive details", "Ask about building history"],
+  "intrinsic_rewards": { "fitness": 1, "calm": 0, "creativity": 0, "social": 0, "knowledge": 2, "discipline": 0 },
+  "interests_used": ["Architecture", "History"],
+  "wildcard": false
+}
+
+GOOD OUTPUT (social focus + creativity minor):
+{
+  "title": "The Chai Conversation",
+  "duration": "25 minutes",
+  "estimated_cost": "₹20",
+  "description": "Find a street-side chai stall. Order one cup. While drinking it, draw a quick sketch of the stall on your phone notes. Strike up one conversation with someone nearby about the weather.",
+  "steps": ["Find a street chai stall", "Order and sketch the scene", "Talk to someone about weather"],
+  "intrinsic_rewards": { "fitness": 0, "calm": 0, "creativity": 1, "social": 2, "knowledge": 0, "discipline": 0 },
+  "interests_used": ["Talking to Strangers", "Sketching"],
+  "wildcard": false
+}
+
+GOOD OUTPUT (calm focus + knowledge minor):
+{
+  "title": "Park Bench Meditation",
+  "duration": "20 minutes",
+  "estimated_cost": "₹0",
+  "description": "Find a bench in the nearest park. Sit for 15 minutes without your phone. Count how many different bird sounds you can identify. Write down the count.",
+  "steps": ["Find a park bench", "Sit 15 minutes without phone", "Count bird sounds"],
+  "intrinsic_rewards": { "fitness": 0, "calm": 2, "creativity": 0, "social": 0, "knowledge": 1, "discipline": 0 },
+  "interests_used": ["Nature", "Mindfulness"],
+  "wildcard": false
+}
+
+VARIETY REQUIREMENT:
+When generating 5 quests, use DIFFERENT stat combinations. Do not give all 5 quests the same stats. Each quest should have its own primary and secondary focus based on what the activity actually involves.
+
+MANDATORY VERIFICATION:
+Before outputting ANY quest, verify:
+1. Count non-zero stats in intrinsic_rewards
+2. If count is NOT exactly 2, revise the stats to match the quest content
+3. Final check: exactly one "2", exactly one "1", four "0" values
 
 MISSION STRUCTURE (internal guide only — do not surface any of this in the output):
 Every quest must contain all of the following, but woven into the prose — never labeled, never explained:
@@ -862,21 +916,75 @@ function parseAIResponse(content: string, request: QuestRequest): Quest[] {
     console.log(`[parseAIResponse] Quest ${idx} raw rewards from AI:`, quest.intrinsic_rewards, "stats:", quest.stats);
     const aiRewards = (quest.intrinsic_rewards || quest.stats) as Record<string, number> | undefined;
     console.log(`[parseAIResponse] Quest ${idx} aiRewards:`, aiRewards);
-    const intrinsicRewards = aiRewards ? {
-      fitness: Math.min(25, Math.max(0, aiRewards.fitness || 0)),
-      calm: Math.min(25, Math.max(0, aiRewards.calm || 0)),
-      creativity: Math.min(25, Math.max(0, aiRewards.creativity || 0)),
-      social: Math.min(25, Math.max(0, aiRewards.social || 0)),
-      knowledge: Math.min(25, Math.max(0, aiRewards.knowledge || 0)),
-      discipline: Math.min(25, Math.max(0, aiRewards.discipline || 0)),
-    } : {
-      fitness: interestsUsed.some(i => ["running", "cycling", "strength_training", "skateboarding", "swimming", "hiking"].includes(i)) ? 15 : 0,
-      calm: request.mood === "chill" || interestsUsed.includes("yoga") ? 15 : 0,
-      creativity: interestsUsed.some(i => ["photography", "sketching", "painting", "street_art", "journaling", "poetry", "collage", "craft_diy", "calligraphy"].includes(i)) ? 20 : 0,
-      social: request.mood === "social" || interestsUsed.some(i => ["talking_strangers", "markets_bazaars", "open_mics", "community_events"].includes(i)) ? 20 : 0,
-      knowledge: interestsUsed.some(i => ["history", "architecture", "museums", "languages", "trivia", "botany", "birdwatching"].includes(i)) ? 15 : 0,
-      discipline: interestsUsed.some(i => ["running", "yoga", "strength_training", "puzzles", "cartography"].includes(i)) ? 10 : 0,
-    };
+
+    // Normalize AI rewards to enforce exactly 1 major (2) and 1 minor (1) stat
+    function normalizeRewards(rewards: Record<string, number> | undefined): { fitness: number; calm: number; creativity: number; social: number; knowledge: number; discipline: number } {
+      if (!rewards) {
+        // Default fallback - creativity major, discipline minor
+        return { fitness: 0, calm: 0, creativity: 2, social: 0, knowledge: 0, discipline: 1 };
+      }
+
+      // Get all stat entries with their values
+      const entries = Object.entries(rewards)
+        .filter(([key]) => ["fitness", "calm", "creativity", "social", "knowledge", "discipline"].includes(key))
+        .map(([key, val]) => ({ key, value: Math.min(2, Math.max(0, Number(val) || 0)) }))
+        .sort((a, b) => b.value - a.value);
+
+      // Find major (highest value, min 1) and minor (second highest, min 1)
+      const major = entries.find(e => e.value >= 1);
+      const minor = entries.filter(e => e.key !== major?.key).find(e => e.value >= 1);
+
+      // Build normalized rewards
+      const normalized: Record<string, number> = {
+        fitness: 0, calm: 0, creativity: 0, social: 0, knowledge: 0, discipline: 0
+      };
+
+      if (major) {
+        normalized[major.key] = 2; // Major stat = 2
+      }
+      if (minor) {
+        normalized[minor.key] = 1; // Minor stat = 1
+      }
+
+      // If we don't have both, pick defaults based on interests or quest type
+      if (!major || !minor) {
+        if (normalized.creativity === 0 && interestsUsed.some(i => ["photography", "sketching", "painting", "street_art", "journaling", "poetry"].includes(i.toLowerCase()))) {
+          if (!major) normalized.creativity = 2;
+          else if (!minor) normalized.creativity = 1;
+        }
+        if (normalized.fitness === 0 && interestsUsed.some(i => ["running", "cycling", "hiking", "swimming", "strength_training"].includes(i.toLowerCase()))) {
+          if (!major) normalized.fitness = 2;
+          else if (!minor) normalized.fitness = 1;
+        }
+        if (normalized.knowledge === 0 && interestsUsed.some(i => ["history", "architecture", "museums", "languages"].includes(i.toLowerCase()))) {
+          if (!major) normalized.knowledge = 2;
+          else if (!minor) normalized.knowledge = 1;
+        }
+        if (normalized.social === 0 && interestsUsed.some(i => ["talking_strangers", "people_watching", "community_events"].includes(i.toLowerCase()))) {
+          if (!major) normalized.social = 2;
+          else if (!minor) normalized.social = 1;
+        }
+        if (normalized.calm === 0 && (request.mood === "chill" || interestsUsed.includes("yoga"))) {
+          if (!major) normalized.calm = 2;
+          else if (!minor) normalized.calm = 1;
+        }
+        if (normalized.discipline === 0 && !minor) {
+          normalized.discipline = 1; // Default minor
+        }
+      }
+
+      return {
+        fitness: normalized.fitness,
+        calm: normalized.calm,
+        creativity: normalized.creativity,
+        social: normalized.social,
+        knowledge: normalized.knowledge,
+        discipline: normalized.discipline,
+      };
+    }
+
+    const intrinsicRewards = normalizeRewards(aiRewards);
+    console.log(`[parseAIResponse] Quest ${idx} normalized rewards:`, intrinsicRewards);
 
     // Check if this is a wildcard quest
     const isWildcard = !!quest.wildcard;

@@ -25,7 +25,7 @@ const feelingLucky = { value: "random" as const, label: "Feeling Lucky", emoji: 
 const energyLevels = [
   { value: "low", label: "Low", description: "Take it easy", color: "bg-cyan-400" },
   { value: "medium", label: "Medium", description: "Balanced", color: "bg-yellow-400" },
-  { value: "high", label: "High", description: "Full energy", color: "bg-rose-400" },
+  { value: "high", label: "High", description: "Full Send!", color: "bg-rose-400" },
 ];
 
 // Gen-Z CTA texts that rotate

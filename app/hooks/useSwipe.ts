@@ -59,15 +59,23 @@ export function useSwipe({
     const deltaX = currentPos.current.x - startPos.current.x;
     const deltaY = currentPos.current.y - startPos.current.y;
 
-    if (deltaX > threshold) {
-      onSwipeRight?.();
-    } else if (deltaX < -threshold) {
-      onSwipeLeft?.();
-    } else if (deltaY < -threshold && Math.abs(deltaX) < threshold / 2) {
-      onSwipeUp?.();
-    }
+    const didSwipeRight = deltaX > threshold;
+    const didSwipeLeft = deltaX < -threshold;
+    const didSwipeUp = deltaY < -threshold && Math.abs(deltaX) < threshold / 2;
 
-    setPosition({ x: 0, y: 0 });
+    if (didSwipeRight) {
+      onSwipeRight?.();
+      // Keep position for exit animation - don't reset
+    } else if (didSwipeLeft) {
+      onSwipeLeft?.();
+      // Keep position for exit animation - don't reset
+    } else if (didSwipeUp) {
+      onSwipeUp?.();
+      // Keep position for exit animation - don't reset
+    } else {
+      // No swipe triggered, reset position
+      setPosition({ x: 0, y: 0 });
+    }
   }, [threshold, onSwipeLeft, onSwipeRight, onSwipeUp]);
 
   const rotation = position.x * 0.05;

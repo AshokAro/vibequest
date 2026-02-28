@@ -784,28 +784,66 @@ Mood: {{mood}}
 Energy level: {{energy}}
 Interests: {{interests}}
 
+ICON RULE - FOLLOW THIS EXACTLY:
+Each quest must have an "icon" field with exactly ONE emoji representing a specific physical object mentioned in that quest's description.
+
+CORRECT examples:
+- Bench quest → "icon": "🪑"
+- Jasmine quest → "icon": "🌸"
+- Window quest → "icon": "🪟"
+- Chai quest → "icon": "☕"
+- Bird quest → "icon": "🐦"
+
+WRONG (never use these): ✨ 📸 🎵 ❓ ✏️ 🏃
+
+All 5 quest icons must be different physical objects.
+
+VARIETY REQUIREMENT:
+When generating 5 quests, use DIFFERENT stat combinations and DIFFERENT icons. Do not give all 5 quests the same primary stat. Each quest should have its own focus based on what the activity actually involves.
+
+MANDATORY VERIFICATION:
+Before finalising ANY quest, run this checklist:
+
+STATS CHECK:
+1. Count non-zero values in intrinsic_rewards
+2. Must be exactly 2: one value of 2, one value of 1, four values of 0
+3. If not: revise to match the quest content
+
+STEPS CHECK:
+4. Does the steps array have 2-4 items? Must not be empty.
+5. Is each step under 12 words and directive (tells user what to do)?
+
+ICON CHECK:
+6. Does the icon represent a physical object mentioned in the quest? (not ✨ 📸 🎵 ❓ ✏️ 🏃)
+7. Confirm all 5 icons are different
+
 Output must be valid JSON with exactly 5 quests in this format:
 {
   "quests": [
     {
-      "title": "...",
-      "duration": "...",
-      "estimated_cost": "...",
-      "description": "...",
-      "steps": ["...", "...", "..."],
+      "title": "The Bench Count",
+      "duration": "20 minutes",
+      "estimated_cost": "₹0",
+      "description": "Cubbon Park has an unreasonable number of benches. Photograph exactly 7 of them.",
+      "steps": ["Head to Cubbon Park", "Find and photograph exactly 7 different benches", "No repeats"],
       "intrinsic_rewards": {
         "fitness": 0,
         "calm": 0,
-        "creativity": 0,
+        "creativity": 2,
         "social": 0,
         "knowledge": 0,
-        "discipline": 0
+        "discipline": 1
       },
-      "interests_used": ["...", "..."],
+      "interests_used": ["photography"],
+      "icon": "🪑",
       "wildcard": false
     }
   ]
-}`;
+}
+
+IMPORTANT: Replace the example values with your own quest content, but keep the same JSON structure.
+- The "steps" array is REQUIRED and must have 2-4 items
+- The "icon" field must be a single emoji like "🪑", "🌸", "🪟", "☕", "🐦", etc.`;
 
   const response = await fetch(OPENAI_URL, {
     method: "POST",
@@ -884,8 +922,9 @@ function parseAIResponse(content: string, request: QuestRequest): Quest[] {
       throw new Error(`Quest ${idx} missing required fields`);
     }
 
-    // Log the intrinsic_rewards from AI
+    // Log the intrinsic_rewards and icon from AI
     console.log(`[parseAIResponse] Quest ${idx} intrinsic_rewards:`, quest.intrinsic_rewards || quest.stats);
+    console.log(`[parseAIResponse] Quest ${idx} raw icon from AI:`, quest.icon);
 
     // Parse duration from string (e.g., "20 min" -> 20)
     const durationStr = String(quest.duration || quest.duration_minutes || request.duration);
@@ -993,9 +1032,12 @@ function parseAIResponse(content: string, request: QuestRequest): Quest[] {
     // Check if this is a wildcard quest
     const isWildcard = !!quest.wildcard;
 
+    // Generate unique ID using timestamp + random + index
+    const uniqueId = `quest-${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${idx}`;
+
     // Bonus XP for wildcard quests (+25% bonus, min 25 XP)
     const baseXP = calculateXP({
-      id: `quest-${Date.now()}-${idx}`,
+      id: uniqueId,
       title: String(quest.title),
       description: fullDescription,
       steps,
@@ -1009,8 +1051,92 @@ function parseAIResponse(content: string, request: QuestRequest): Quest[] {
 
     console.log(`[API] Quest ${idx} final intrinsic_rewards:`, intrinsicRewards);
 
+    // Log raw icon from AI for debugging
+    console.log(`[parseAIResponse] Quest ${idx} raw icon from AI:`, JSON.stringify(quest.icon));
+
+    // Fallback: extract emoji from description if AI didn't provide one
+    function extractIconFromDescription(description: string, title: string): string {
+      // Common emoji mappings for quest activities
+      const keywordToEmoji: Record<string, string> = {
+        // Buildings/Places
+        "temple": "🛕", "church": "⛪", "mosque": "🕌", "park": "🌳", "garden": "🌿",
+        "bench": "🪑", "cafe": "☕", "coffee": "☕", "restaurant": "🍽️", "market": "🛒",
+        "shop": "🏪", "store": "🏪", "museum": "🏛️", "library": "📚", "beach": "🏖️",
+        "lake": "🌊", "river": "🌊", "tank": "🌊", "street": "🛣️", "road": "🛣️",
+        // Actions
+        "photograph": "📷", "photo": "📷", "sketch": "✏️", "draw": "✏️", "write": "✍️",
+        "read": "📖", "walk": "🚶", "run": "🏃", "sit": "🪑", "stand": "🧍",
+        "count": "🔢", "find": "🔍", "look": "👀", "watch": "👀", "observe": "🔭",
+        // Objects
+        "flower": "🌸", "tree": "🌳", "leaf": "🍃", "bird": "🐦", "dog": "🐕",
+        "book": "📖", "paper": "📄", "pen": "🖊️", "pencil": "✏️", "phone": "📱",
+        "camera": "📷", "money": "💰", "coin": "🪙", "rupee": "💰", "food": "🍽️",
+        "chai": "☕", "tea": "☕", "snack": "🍿", "meal": "🍽️", "plate": "🍽️",
+        "window": "🪟", "door": "🚪", "wall": "🧱", "sign": "🪧", "board": "🪧",
+        "stair": "🪜", "step": "🪜", "roof": "🏠", "building": "🏢", "house": "🏠",
+        // Activities
+        "talk": "💬", "chat": "💬", "ask": "❓", "question": "❓", "answer": "💬",
+        "conversation": "💬", "speak": "🗣️", "listen": "👂", "hear": "👂",
+        "yoga": "🧘", "meditate": "🧘", "stretch": "🤸", "exercise": "💪",
+        "dance": "💃", "sing": "🎤", "play": "🎮", "game": "🎲",
+        // Nature
+        "sun": "☀️", "sky": "🌤️", "cloud": "☁️", "rain": "🌧️", "wind": "💨",
+        "stone": "🪨", "rock": "🪨", "sand": "🏖️", "grass": "🌱", "plant": "🌿",
+        // Art/Culture
+        "art": "🎨", "paint": "🎨", "color": "🎨", "music": "🎵", "song": "🎵",
+        "drama": "🎭", "theater": "🎭", "film": "🎬", "movie": "🎬",
+        // Time
+        "clock": "⏰", "time": "⏰", "minute": "⏱️", "hour": "🕐", "day": "📅",
+        // Social
+        "people": "👥", "person": "🧑", "man": "👨", "woman": "👩", "child": "👶",
+        "friend": "🧑‍🤝‍🧑", "group": "👥", "crowd": "👥", "stranger": "🚶",
+        // Materials
+        "wood": "🪵", "metal": "🔩", "glass": "🥃", "paper": "📄", "plastic": "🥤",
+        // Shopping/Money
+        "buy": "🛒", "sell": "🏷️", "price": "🏷️", "cheap": "💸", "expensive": "💎",
+        "thrift": "👕", "shop": "🛍️", "bargain": "💰", "negotiate": "🤝",
+        // Documenting
+        "note": "📝", "list": "📋", "journal": "📓", "diary": "📔", "record": "🎙️",
+        // Transportation
+        "bus": "🚌", "train": "🚆", "metro": "🚇", "auto": "🛺", "walk": "🚶",
+        // Specific items
+        "jasmine": "🌸", "flower": "🌺", "fabric": "🧵", "cloth": "🧶", "sari": "🥻",
+        "bench": "🪑", "chair": "🪑", "table": "🪑", "seat": "💺",
+        // Misc
+        "shadow": "🌑", "light": "💡", "reflection": "🪞", "pattern": "🔲", "texture": "〰️",
+        "old": "🏛️", "new": "✨", "ancient": "🏺", "modern": "🏢",
+      };
+
+      const text = (description + " " + title).toLowerCase();
+
+      // Find first matching keyword
+      for (const [keyword, emoji] of Object.entries(keywordToEmoji)) {
+        if (text.includes(keyword)) {
+          return emoji;
+        }
+      }
+
+      // Default fallbacks based on quest type
+      if (text.includes("photograph") || text.includes("photo")) return "📷";
+      if (text.includes("walk") || text.includes("explore")) return "🚶";
+      if (text.includes("draw") || text.includes("sketch")) return "✏️";
+      if (text.includes("talk") || text.includes("conversation")) return "💬";
+      if (text.includes("read") || text.includes("book")) return "📖";
+      if (text.includes("food") || text.includes("eat")) return "🍽️";
+      if (text.includes("park") || text.includes("nature")) return "🌳";
+      if (text.includes("shop") || text.includes("market")) return "🛒";
+
+      return "✨";
+    }
+
+    const finalIcon = quest.icon && String(quest.icon).trim()
+      ? String(quest.icon).trim()
+      : extractIconFromDescription(String(quest.description), String(quest.title));
+
+    console.log(`[parseAIResponse] Quest ${idx} final icon:`, finalIcon);
+
     const questData: Omit<Quest, "xp_reward"> = {
-      id: `quest-${Date.now()}-${idx}`,
+      id: uniqueId,
       title: String(quest.title),
       description: fullDescription,
       steps,
@@ -1025,7 +1151,7 @@ function parseAIResponse(content: string, request: QuestRequest): Quest[] {
         suggestion: request.location?.city || "Local area",
       },
       intrinsic_rewards: intrinsicRewards,
-      icon: isWildcard ? "🎲" : "✨",
+      icon: finalIcon,
       is_wildcard: isWildcard,
       interests_used: interestsUsed,
     };
@@ -1047,7 +1173,8 @@ function generateMockQuests(request: QuestRequest): Quest[] {
       steps: ["Grab your phone", "Walk around your area", "Find subjects that speak to you", "Take 5 thoughtful photos"],
       effort: { physical: 2, mental: 2 },
       location: { type: "nearby" as const, suggestion: `Main streets and alleys of ${city}` },
-      rewards: { fitness: 5, calm: 10, creativity: 20, social: 0, knowledge: 0, discipline: 5 },
+      // New format: exactly one stat = 2, one stat = 1, rest = 0
+      rewards: { fitness: 0, calm: 0, creativity: 2, social: 0, knowledge: 0, discipline: 1 },
     },
     {
       title: `[MOCK] Coffee & Conversations`,
@@ -1055,7 +1182,7 @@ function generateMockQuests(request: QuestRequest): Quest[] {
       steps: ["Find a busy coffee shop nearby", "Order something new", "Observe or chat with someone", "Enjoy the moment"],
       effort: { physical: 1, mental: 3 },
       location: { type: "nearby" as const, suggestion: `Popular cafe in ${city}` },
-      rewards: { fitness: 0, calm: 5, creativity: 0, social: 25, knowledge: 5, discipline: 10 },
+      rewards: { fitness: 0, calm: 0, creativity: 0, social: 2, knowledge: 0, discipline: 1 },
     },
     {
       title: `[MOCK] Park Bench Meditation`,
@@ -1063,7 +1190,7 @@ function generateMockQuests(request: QuestRequest): Quest[] {
       steps: ["Walk to a nearby park", "Find a comfortable bench", "Close your eyes and breathe", "Observe your surroundings"],
       effort: { physical: 1, mental: 2 },
       location: { type: "nearby" as const, suggestion: `Nearest park in ${city}` },
-      rewards: { fitness: 0, calm: 25, creativity: 5, social: 0, knowledge: 0, discipline: 15 },
+      rewards: { fitness: 0, calm: 2, creativity: 0, social: 0, knowledge: 0, discipline: 1 },
     },
     {
       title: `[MOCK] Local Landmark Visit`,
@@ -1071,7 +1198,7 @@ function generateMockQuests(request: QuestRequest): Quest[] {
       steps: ["Research a nearby landmark", "Walk or travel there", "Observe details carefully", "Take a photo or make notes"],
       effort: { physical: 3, mental: 3 },
       location: { type: "nearby" as const, suggestion: `Historic or cultural spot in ${city}` },
-      rewards: { fitness: 10, calm: 5, creativity: 5, social: 0, knowledge: 20, discipline: 10 },
+      rewards: { fitness: 1, calm: 0, creativity: 0, social: 0, knowledge: 2, discipline: 0 },
     },
     // Wildcard mock quest - appears last with bonus XP
     {
@@ -1080,15 +1207,16 @@ function generateMockQuests(request: QuestRequest): Quest[] {
       steps: ["Walk one block in any direction", "Identify the oldest structure", "Find 3 unusual details", "Document with photos"],
       effort: { physical: 2, mental: 3 },
       location: { type: "nearby" as const, suggestion: `Your neighborhood in ${city}` },
-      rewards: { fitness: 5, calm: 10, creativity: 25, social: 0, knowledge: 15, discipline: 10 },
+      rewards: { fitness: 0, calm: 0, creativity: 2, social: 0, knowledge: 1, discipline: 0 },
       is_wildcard: true,
     },
   ];
 
   return templates.map((template, idx) => {
     const isWildcard = (template as Record<string, unknown>).is_wildcard as boolean || false;
+    const uniqueId = `mock-${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${idx}`;
     const baseXP = calculateXP({
-      id: `quest-${Date.now()}-${idx}`,
+      id: uniqueId,
       title: template.title,
       description: template.description,
       steps: template.steps,
@@ -1100,7 +1228,7 @@ function generateMockQuests(request: QuestRequest): Quest[] {
     });
 
     const quest: Omit<Quest, "xp_reward"> = {
-      id: `quest-${Date.now()}-${idx}`,
+      id: uniqueId,
       title: template.title,
       description: template.description,
       steps: template.steps,
@@ -1109,8 +1237,9 @@ function generateMockQuests(request: QuestRequest): Quest[] {
       effort: template.effort,
       location: template.location,
       intrinsic_rewards: template.rewards,
-      icon: isWildcard ? "🎲" : "✨",
+      icon: (template as Record<string, unknown>).icon as string,
       is_wildcard: isWildcard,
+      interests_used: [],
     };
 
     // Apply wildcard bonus XP

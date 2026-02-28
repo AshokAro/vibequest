@@ -20,7 +20,8 @@ import { cn } from "@/lib/utils";
 import { useTapFeedback } from "../hooks/useTapFeedback";
 import { Button, SelectablePill } from "../components/Button";
 import { Logo } from "../components/Logo";
-import type { Interest, InterestOption, UserPreferences } from "@/lib/types";
+import type { Interest, InterestOption, UserPreferences, UserProfile, SkillLevel } from "@/lib/types";
+import { getXpToNextLevel } from "@/lib/leveling";
 
 interface PlacePrediction {
   place_id: string;
@@ -225,6 +226,38 @@ export default function OnboardingPage() {
       preferredQuestTypes: preferredTypes,
     };
     localStorage.setItem("vibequest_preferences", JSON.stringify(preferences));
+
+    // Clear old quest history and completion feedback (fresh start)
+    localStorage.removeItem("vibequest_completed_quests");
+    localStorage.removeItem("vibequest_completion_feedback");
+
+    // Create initial user profile at level 1
+    const initialSkill: SkillLevel = {
+      level: 1,
+      progress: 0,
+      pointsInLevel: 0,
+      pointsToNext: 100,
+    };
+
+    const initialProfile: UserProfile = {
+      id: `user-${Date.now()}`,
+      level: 1,
+      xp: 0,
+      xp_to_next: getXpToNextLevel(1), // 500 XP to reach level 2
+      momentum_score: 0,
+      lastQuestDate: undefined,
+      stats: {
+        fitness: { ...initialSkill },
+        calm: { ...initialSkill },
+        creativity: { ...initialSkill },
+        social: { ...initialSkill },
+        knowledge: { ...initialSkill },
+        discipline: { ...initialSkill },
+      },
+      completed_quests: 0,
+    };
+    localStorage.setItem("vibequest_profile", JSON.stringify(initialProfile));
+
     router.push("/");
   };
 

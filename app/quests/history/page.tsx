@@ -88,6 +88,8 @@ export default function QuestHistoryPage() {
                       })}
                       {" · "}
                       {Math.floor(item.duration / 60)}m {item.duration % 60}s
+                      {" · "}
+                      {item.rating === "loved_it" ? "🤩" : item.rating === "good" ? "😁" : item.rating === "meh" ? "😐" : "✨"}
                     </p>
                   </div>
                   <span className="text-sm font-black text-[#a3e635] bg-[#a3e635]/10 px-3 py-1 rounded-full flex-shrink-0">

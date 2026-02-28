@@ -27,19 +27,27 @@ export interface Quest {
   interests_used?: string[];
 }
 
+export interface SkillLevel {
+  level: number;
+  progress: number; // Current progress toward next level (0-100)
+  pointsInLevel: number; // Points accumulated in current level
+  pointsToNext: number; // Points needed to reach next level
+}
+
 export interface UserProfile {
   id: string;
   level: number;
   xp: number;
   xp_to_next: number;
   momentum_score: number;
+  lastQuestDate?: string; // ISO date of last completed quest (for momentum calculation)
   stats: {
-    fitness: number;
-    calm: number;
-    creativity: number;
-    social: number;
-    knowledge: number;
-    discipline: number;
+    fitness: SkillLevel;
+    calm: SkillLevel;
+    creativity: SkillLevel;
+    social: SkillLevel;
+    knowledge: SkillLevel;
+    discipline: SkillLevel;
   };
   completed_quests: number;
 }
@@ -224,6 +232,7 @@ export interface CompletedQuest {
   completedAt: string;
   xpEarned: number;
   duration: number;
+  rating?: "loved_it" | "good" | "meh" | null;
 }
 
 export interface CompletionFeedback {

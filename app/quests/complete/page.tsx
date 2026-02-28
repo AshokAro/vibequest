@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { Sparkles, Share2, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTapFeedback } from "../../hooks/useTapFeedback";
 import { Button } from "../../components/Button";
-import type { Quest } from "@/lib/types";
+import type { Quest, SkillLevel } from "@/lib/types";
+import { addXp, addSkillPoints, calculateMomentum, getDaysDifference, getTotalSkillPoints } from "@/lib/leveling";
 
 // Confetti component that hides after animation completes
 function Confetti({ onComplete }: { onComplete: () => void }) {
@@ -91,34 +92,37 @@ function AnimatedNumber({ value, duration = 1000 }: { value: number; duration?: 
   return <span>{displayValue}</span>;
 }
 
-// Stat bar with animation
+// Stat bar with animation - shows current skill level + increase
 function StatBar({
   label,
   value,
   color,
   isMajor,
+  currentValue,
 }: {
   label: string;
   value: number;
   color: string;
   isMajor: boolean;
+  currentValue: number;
 }) {
-  const percentage = isMajor ? 100 : 50;
+  const increase = isMajor ? 20 : 10;
+  const newValue = Math.min(100, currentValue + increase);
+  const fillPercentage = newValue;
 
   return (
-    <div className={cn("space-y-1", !isMajor && "opacity-60")}>
+    <div className="space-y-1">
       <div className="flex items-center justify-between text-xs">
-        <span className={cn("font-bold capitalize", isMajor ? "text-[#1a1a1a]" : "text-[#666]")}>
+        <span className="font-bold capitalize text-[#1a1a1a]">
           {label}
-          {!isMajor && <span className="ml-1 text-[10px]">(minor)</span>}
         </span>
-        <span className={cn("font-black", color)}>+{isMajor ? 2 : 1}</span>
+        <span className={cn("font-black", color)}>+{increase}</span>
       </div>
       <div className="h-2 bg-[#e5e5e5] rounded-full overflow-hidden hard-border">
         <motion.div
           className={cn("h-full rounded-full", color.replace("text-", "bg-"))}
-          initial={{ width: 0 }}
-          animate={{ width: `${percentage}%` }}
+          initial={{ width: `${currentValue}%` }}
+          animate={{ width: `${fillPercentage}%` }}
           transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
         />
       </div>
@@ -148,9 +152,13 @@ export default function QuestCompletePage() {
     completedAt: string;
   } | null>(null);
   const [showConfetti, setShowConfetti] = useState(true);
+  const [currentStats, setCurrentStats] = useState<Record<string, number>>({
+    fitness: 0, calm: 0, creativity: 0, social: 0, knowledge: 0, discipline: 0
+  });
+  const [skillLevels, setSkillLevels] = useState<Record<string, { before: SkillLevel; after: SkillLevel }>>({});
 
-  // Feedback state
-  const [rating, setRating] = useState<Rating>("good");
+  // Feedback state - no default selection
+  const [rating, setRating] = useState<Rating>(null);
 
   const handleConfettiComplete = useCallback(() => {
     setShowConfetti(false);
@@ -158,28 +166,14 @@ export default function QuestCompletePage() {
 
   useEffect(() => {
     const stored = sessionStorage.getItem("questCompletion");
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      setCompletion(parsed);
+    if (!stored) return;
 
-      // Save to quest history
-      if (parsed.quest) {
-        const historyItem = {
-          id: `${parsed.quest.id}-${Date.now()}`,
-          quest: parsed.quest,
-          completedAt: parsed.completedAt || new Date().toISOString(),
-          xpEarned: parsed.xpEarned,
-          duration: parsed.duration,
-        };
+    const parsed = JSON.parse(stored);
+    setCompletion(parsed);
 
-        const existingHistory = localStorage.getItem("vibequest_completed_quests");
-        const history = existingHistory ? JSON.parse(existingHistory) : [];
-        history.unshift(historyItem);
-        // Keep only last 50 completed quests
-        const trimmedHistory = history.slice(0, 50);
-        localStorage.setItem("vibequest_completed_quests", JSON.stringify(trimmedHistory));
-
-        // Update completed_quests count in preferences
+    // Update user stats (XP, skills, etc.) immediately
+    // History is saved later in handleDone() to include the rating
+    if (parsed.quest) {
         const prefs = localStorage.getItem("vibequest_preferences");
         if (prefs) {
           const parsedPrefs = JSON.parse(prefs);
@@ -193,23 +187,108 @@ export default function QuestCompletePage() {
           const parsedProfile = JSON.parse(profile);
           const rewards = parsed.quest.intrinsic_rewards;
 
-          // Add rewards to stats (handle both 0-2 and 0-25 scales)
-          // Scale up 0-2 values to 0-25 for display consistency
-          const scale = (val: number) => val <= 2 ? val * 10 : val;
-
-          parsedProfile.stats = {
-            fitness: Math.min(100, (parsedProfile.stats?.fitness || 0) + scale(rewards.fitness)),
-            calm: Math.min(100, (parsedProfile.stats?.calm || 0) + scale(rewards.calm)),
-            creativity: Math.min(100, (parsedProfile.stats?.creativity || 0) + scale(rewards.creativity)),
-            social: Math.min(100, (parsedProfile.stats?.social || 0) + scale(rewards.social)),
-            knowledge: Math.min(100, (parsedProfile.stats?.knowledge || 0) + scale(rewards.knowledge)),
-            discipline: Math.min(100, (parsedProfile.stats?.discipline || 0) + scale(rewards.discipline)),
+          // Helper to ensure skill has proper structure (handles old format migration)
+          const ensureSkill = (skill: unknown): SkillLevel => {
+            if (typeof skill === 'object' && skill !== null && 'level' in skill) {
+              const s = skill as Record<string, unknown>;
+              // Ensure all required fields exist with valid numbers
+              return {
+                level: typeof s.level === 'number' ? s.level : 1,
+                progress: typeof s.progress === 'number' ? s.progress : 0,
+                pointsInLevel: typeof s.pointsInLevel === 'number' ? s.pointsInLevel : 0,
+                pointsToNext: typeof s.pointsToNext === 'number' ? s.pointsToNext : 100,
+              };
+            }
+            // Migration from old number format (or invalid data)
+            const points = typeof skill === 'number' ? skill : 0;
+            return {
+              level: 1,
+              progress: Math.min(100, points),
+              pointsInLevel: points % 100,
+              pointsToNext: 100,
+            };
           };
 
+          // Get current stats BEFORE updating (for display)
+          const beforeStats = {
+            fitness: ensureSkill(parsedProfile.stats?.fitness),
+            calm: ensureSkill(parsedProfile.stats?.calm),
+            creativity: ensureSkill(parsedProfile.stats?.creativity),
+            social: ensureSkill(parsedProfile.stats?.social),
+            knowledge: ensureSkill(parsedProfile.stats?.knowledge),
+            discipline: ensureSkill(parsedProfile.stats?.discipline),
+          };
+
+          // Calculate skill points to add (20 for major/2, 10 for minor/1)
+          const getPoints = (val: number) => val === 2 ? 20 : val === 1 ? 10 : 0;
+
+          console.log("[QuestComplete] Processing rewards:", JSON.stringify(rewards));
+          console.log("[QuestComplete] Before stats:", JSON.stringify(beforeStats));
+
+          // Update each skill with leveling
+          // Use getTotalSkillPoints to properly calculate cumulative points for progressive difficulty
+          const updatedSkills = {
+            fitness: addSkillPoints(getTotalSkillPoints(beforeStats.fitness.level, beforeStats.fitness.pointsInLevel), getPoints(rewards.fitness)),
+            calm: addSkillPoints(getTotalSkillPoints(beforeStats.calm.level, beforeStats.calm.pointsInLevel), getPoints(rewards.calm)),
+            creativity: addSkillPoints(getTotalSkillPoints(beforeStats.creativity.level, beforeStats.creativity.pointsInLevel), getPoints(rewards.creativity)),
+            social: addSkillPoints(getTotalSkillPoints(beforeStats.social.level, beforeStats.social.pointsInLevel), getPoints(rewards.social)),
+            knowledge: addSkillPoints(getTotalSkillPoints(beforeStats.knowledge.level, beforeStats.knowledge.pointsInLevel), getPoints(rewards.knowledge)),
+            discipline: addSkillPoints(getTotalSkillPoints(beforeStats.discipline.level, beforeStats.discipline.pointsInLevel), getPoints(rewards.discipline)),
+          };
+
+          // Convert back to SkillLevel format
+          const afterStats = {
+            fitness: { level: updatedSkills.fitness.level, progress: updatedSkills.fitness.progressPercent, pointsInLevel: updatedSkills.fitness.pointsInLevel, pointsToNext: updatedSkills.fitness.pointsToNext },
+            calm: { level: updatedSkills.calm.level, progress: updatedSkills.calm.progressPercent, pointsInLevel: updatedSkills.calm.pointsInLevel, pointsToNext: updatedSkills.calm.pointsToNext },
+            creativity: { level: updatedSkills.creativity.level, progress: updatedSkills.creativity.progressPercent, pointsInLevel: updatedSkills.creativity.pointsInLevel, pointsToNext: updatedSkills.creativity.pointsToNext },
+            social: { level: updatedSkills.social.level, progress: updatedSkills.social.progressPercent, pointsInLevel: updatedSkills.social.pointsInLevel, pointsToNext: updatedSkills.social.pointsToNext },
+            knowledge: { level: updatedSkills.knowledge.level, progress: updatedSkills.knowledge.progressPercent, pointsInLevel: updatedSkills.knowledge.pointsInLevel, pointsToNext: updatedSkills.knowledge.pointsToNext },
+            discipline: { level: updatedSkills.discipline.level, progress: updatedSkills.discipline.progressPercent, pointsInLevel: updatedSkills.discipline.pointsInLevel, pointsToNext: updatedSkills.discipline.pointsToNext },
+          };
+
+          setCurrentStats({
+            fitness: beforeStats.fitness.progress,
+            calm: beforeStats.calm.progress,
+            creativity: beforeStats.creativity.progress,
+            social: beforeStats.social.progress,
+            knowledge: beforeStats.knowledge.progress,
+            discipline: beforeStats.discipline.progress,
+          });
+
+          setSkillLevels({
+            fitness: { before: beforeStats.fitness, after: afterStats.fitness },
+            calm: { before: beforeStats.calm, after: afterStats.calm },
+            creativity: { before: beforeStats.creativity, after: afterStats.creativity },
+            social: { before: beforeStats.social, after: afterStats.social },
+            knowledge: { before: beforeStats.knowledge, after: afterStats.knowledge },
+            discipline: { before: beforeStats.discipline, after: afterStats.discipline },
+          });
+
+          // Update XP and level
+          const currentXp = parsedProfile.xp || 0;
+          const xpGained = parsed.xpEarned || 0;
+          const xpResult = addXp(currentXp, xpGained);
+
+          // Update momentum (+1 for completing a quest)
+          const lastQuestDate = parsedProfile.lastQuestDate;
+          const today = new Date().toISOString().split('T')[0];
+          const daysSinceLastQuest = lastQuestDate ? getDaysDifference(lastQuestDate, today) : 0;
+          const currentMomentum = parsedProfile.momentum_score || 0;
+          const newMomentum = calculateMomentum(currentMomentum, 1, daysSinceLastQuest);
+
+          parsedProfile.xp = xpResult.newTotalXp;
+          parsedProfile.level = xpResult.level;
+          parsedProfile.xp_to_next = xpResult.xpToNext;
+          parsedProfile.momentum_score = newMomentum;
+          parsedProfile.lastQuestDate = today;
+          parsedProfile.stats = afterStats;
+
           localStorage.setItem("vibequest_profile", JSON.stringify(parsedProfile));
+
+          // Clear session storage to prevent re-processing on refresh
+          sessionStorage.removeItem("questCompletion");
         }
       }
-    }
   }, []);
 
   const handleShare = async () => {
@@ -235,8 +314,24 @@ export default function QuestCompletePage() {
   const handleDone = () => {
     triggerHaptic("success");
 
-    // Log completion feedback
     if (completion?.quest) {
+      // Save to quest history (now with rating)
+      const existingHistory = localStorage.getItem("vibequest_completed_quests");
+      const history = existingHistory ? JSON.parse(existingHistory) : [];
+
+      const historyItem = {
+        id: `${completion.quest.id}-${Date.now()}`,
+        quest: completion.quest,
+        completedAt: new Date().toISOString(),
+        xpEarned: completion.xpEarned,
+        duration: completion.duration,
+        rating: rating,
+      };
+
+      history.unshift(historyItem);
+      localStorage.setItem("vibequest_completed_quests", JSON.stringify(history.slice(0, 50)));
+
+      // Log completion feedback for AI
       const feedbackData = {
         quest_id: completion.quest.id,
         quest_title: completion.quest.title,
@@ -247,15 +342,12 @@ export default function QuestCompletePage() {
         rating: rating,
       };
 
-      // Save to completion history for AI prompt analysis
       const existingFeedback = localStorage.getItem("vibequest_completion_feedback");
       const feedbackHistory = existingFeedback ? JSON.parse(existingFeedback) : [];
       feedbackHistory.unshift(feedbackData);
-      // Keep last 100 entries
-      const trimmedFeedback = feedbackHistory.slice(0, 100);
-      localStorage.setItem("vibequest_completion_feedback", JSON.stringify(trimmedFeedback));
+      localStorage.setItem("vibequest_completion_feedback", JSON.stringify(feedbackHistory.slice(0, 100)));
 
-      console.log("[QuestComplete] Feedback logged:", feedbackData);
+      console.log("[QuestComplete] History and feedback saved:", historyItem);
     }
 
     // Navigate home
@@ -345,6 +437,7 @@ export default function QuestCompletePage() {
                 value={value}
                 color={statColors[key]}
                 isMajor={value === 2}
+                currentValue={currentStats[key] || 0}
               />
             ))}
         </motion.div>
@@ -362,17 +455,17 @@ export default function QuestCompletePage() {
           <span className="text-xs text-[#666] font-bold">How was it?</span>
           <div className="grid grid-cols-3 gap-3">
             {[
-              { emoji: "😐", value: "meh" as const },
-              { emoji: "🙂", value: "good" as const },
-              { emoji: "🤩", value: "loved_it" as const },
-            ].map(({ emoji, value }) => (
+              { emoji: "😐", value: "meh" as const, color: "bg-[#ff6b9d]" },
+              { emoji: "😁", value: "good" as const, color: "bg-[#22d3ee]" },
+              { emoji: "🤩", value: "loved_it" as const, color: "bg-[#a3e635]" },
+            ].map(({ emoji, value, color }) => (
               <button
                 key={value}
                 onClick={() => handleRating(value)}
                 className={cn(
                   "flex items-center justify-center px-2 py-3 rounded-xl border-2 border-[#1a1a1a] tap-target transition-all duration-200 hard-shadow-sm",
                   rating === value
-                    ? "bg-[#fbbf24] text-[#1a1a1a] hard-shadow -translate-y-0.5"
+                    ? cn(color, "text-[#1a1a1a] hard-shadow -translate-y-0.5")
                     : "bg-white text-[#1a1a1a] hard-shadow-hover"
                 )}
               >

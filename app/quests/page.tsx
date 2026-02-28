@@ -88,6 +88,7 @@ const mockQuests: Quest[] = [
     location: { type: "nearby", suggestion: "Your neighborhood streets" },
     intrinsic_rewards: { fitness: 0, calm: 0, creativity: 2, social: 0, knowledge: 0, discipline: 1 },
     xp_reward: 85,
+    icon: "📸",
   },
   {
     id: "2",
@@ -100,6 +101,7 @@ const mockQuests: Quest[] = [
     location: { type: "nearby", suggestion: "Local coffee shop" },
     intrinsic_rewards: { fitness: 0, calm: 1, creativity: 2, social: 0, knowledge: 0, discipline: 0 },
     xp_reward: 110,
+    icon: "☕",
   },
   {
     id: "3",
@@ -112,6 +114,31 @@ const mockQuests: Quest[] = [
     location: { type: "nearby", suggestion: "Local park bench" },
     intrinsic_rewards: { fitness: 0, calm: 2, creativity: 0, social: 0, knowledge: 0, discipline: 1 },
     xp_reward: 95,
+  },
+  {
+    id: "4",
+    title: "Local History Hunt",
+    description: "Find the oldest building within 3 blocks and identify one architectural detail that reveals its age.",
+    steps: ["Walk 3 blocks in any direction", "Identify the oldest building", "Find one historical detail", "Research its significance"],
+    duration_minutes: 30,
+    budget_estimate: 0,
+    effort: { physical: 2, mental: 3 },
+    location: { type: "nearby", suggestion: "Historic buildings in your area" },
+    intrinsic_rewards: { fitness: 0, calm: 0, creativity: 1, social: 0, knowledge: 2, discipline: 0 },
+    xp_reward: 105,
+  },
+  {
+    id: "5",
+    title: "Random Street Encounter",
+    description: "A wildcard quest! Walk to the busiest street corner near you and strike up a conversation with someone wearing the color blue.",
+    steps: ["Find the busiest intersection nearby", "Look for someone in blue", "Ask them about their day", "Listen actively for 2 minutes"],
+    duration_minutes: 20,
+    budget_estimate: 0,
+    effort: { physical: 1, mental: 4 },
+    location: { type: "nearby", suggestion: "Busy intersection" },
+    intrinsic_rewards: { fitness: 0, calm: 0, creativity: 0, social: 2, knowledge: 0, discipline: 1 },
+    xp_reward: 130,
+    is_wildcard: true,
   },
 ];
 
@@ -157,26 +184,47 @@ function QuestCard({
 
   return (
     <motion.div
+      layoutId={quest.id}
+      initial={{ scale: 0.9, opacity: 0 }}
+      animate={{
+        scale: isTop ? 1 : 0.95,
+        opacity: 1,
+        zIndex: isTop ? 10 : 0,
+      }}
+      exit={{
+        opacity: 0,
+        scale: 0.8,
+        x: isTop ? (position.x > 0 ? 500 : -500) : 0,
+        transition: { duration: 0.2 },
+      }}
+      transition={{
+        layout: { duration: 0.25, ease: [0.4, 0, 0.2, 1] },
+        scale: { duration: 0.25, ease: [0.4, 0, 0.2, 1] },
+        opacity: { duration: 0.15 },
+      }}
       className={cn(
-        "absolute inset-x-4 top-0 mx-auto w-auto",
-        isTop ? "z-10" : "z-0 scale-95"
+        "absolute inset-x-0 top-0 mx-auto",
+        isTop ? "z-10" : "z-0"
       )}
       style={{
-        transform: isTop
-          ? `translateX(${position.x}px) translateY(${position.y}px) rotate(${rotation}deg)`
-          : undefined,
+        height: 'calc(100vh - 240px)',
+        maxHeight: '480px',
       }}
       {...(isTop ? handlers : {})}
     >
       <div
         className={cn(
-          "rounded-2xl border-2 overflow-hidden tap-target no-select hard-shadow flex flex-col bg-white",
+          "rounded-2xl border-2 overflow-hidden tap-target no-select hard-shadow flex flex-col bg-white h-full",
           isWildcard
             ? "bg-gradient-to-br from-[#ff6b9d]/10 via-white to-[#c084fc]/10 border-[#ff6b9d]"
             : "bg-white border-[#1a1a1a]",
-          isTop ? "cursor-grab active:cursor-grabbing" : "scale-95"
+          isTop ? "cursor-grab active:cursor-grabbing" : ""
         )}
-        style={{ height: 'calc(100vh - 240px)', maxHeight: '480px' }}
+        style={{
+          transform: isTop
+            ? `translateX(${position.x}px) translateY(${position.y}px) rotate(${rotation}deg)`
+            : 'translateX(0) translateY(0) rotate(0deg)',
+        }}
       >
         {/* Content wrapper with swipe opacity */}
         <div
@@ -187,10 +235,10 @@ function QuestCard({
         <div className="relative px-4 pt-6 pb-4 flex-shrink-0">
           {/* Wildcard Badge - Top Left */}
           {isWildcard && (
-            <div className="absolute top-4 left-4 animate-pulse">
-              <div className="flex items-center gap-1 bg-gradient-to-r from-[#ff6b9d] to-[#c084fc] hard-border rounded-full px-2.5 py-1">
-                <Sparkles className="w-3 h-3 text-white" />
-                <span className="text-xs font-black text-white">WILDCARD</span>
+            <div className="absolute top-4 left-4">
+              <div className="flex items-center gap-1 bg-gradient-to-r from-[#ff6b9d] to-[#c084fc] hard-border rounded-full px-2.5 py-1 shimmer-effect">
+                <Sparkles className="w-3 h-3 text-white relative z-10" />
+                <span className="text-xs font-black text-white relative z-10">WILDCARD</span>
               </div>
             </div>
           )}
@@ -205,8 +253,8 @@ function QuestCard({
           </div>
 
           {/* Emoji - Top Center */}
-          <div className="text-center">
-            <span className="text-5xl">{quest.icon || "✨"}</span>
+          <div className="text-center pt-4">
+            <span className="text-5xl">{quest.icon}</span>
           </div>
         </div>
 
@@ -297,6 +345,7 @@ export default function QuestsPage() {
   const { triggerHaptic } = useTapFeedback();
   const [quests, setQuests] = useState<Quest[]>(mockQuests);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [visualIndex, setVisualIndex] = useState(0);
   const [loading, setLoading] = useState(false);
   const [request, setRequest] = useState<QuestRequest | null>(null);
   const [loadingMessage, setLoadingMessage] = useState(loadingMessages[0]);
@@ -326,10 +375,10 @@ export default function QuestsPage() {
 
   const handleAccept = useCallback(() => {
     triggerHaptic("success");
-    const quest = quests[currentIndex];
+    const quest = quests[visualIndex];
     sessionStorage.setItem("activeQuest", JSON.stringify(quest));
     router.push("/quests/active");
-  }, [quests, currentIndex, router, triggerHaptic]);
+  }, [quests, visualIndex, router, triggerHaptic]);
 
   const generateQuests = useCallback(async () => {
     if (!request) {
@@ -385,8 +434,9 @@ export default function QuestsPage() {
 
       const data = await response.json();
       console.log("[Frontend] Received quests:", data.quests?.length);
-      console.log("[Frontend] First quest intrinsic_rewards:", data.quests?.[0]?.intrinsic_rewards);
-      console.log("[Frontend] All quest rewards:", data.quests?.map((q: Quest) => q.intrinsic_rewards));
+      console.log("[Frontend] Quest icons:", data.quests?.map((q: Quest, i: number) => `${i}: "${q.icon}" (title: "${q.title?.substring(0, 30)}...")`));
+      // Log full first quest to see what fields AI returns
+      console.log("[Frontend] Full first quest:", JSON.stringify(data.quests?.[0], null, 2));
 
       // Save returned locations to cache for future use
       if (city && data.locations && data.locations.length > 0) {
@@ -395,6 +445,7 @@ export default function QuestsPage() {
 
       setQuests(data.quests);
       setCurrentIndex(0);
+      setVisualIndex(0);
     } catch (error) {
       console.error("[Frontend] Failed to generate quests:", error);
     } finally {
@@ -409,8 +460,13 @@ export default function QuestsPage() {
 
   const handleDiscard = useCallback(() => {
     triggerHaptic("error");
+    // Update currentIndex immediately for state tracking
     if (currentIndex < quests.length - 1) {
       setCurrentIndex((prev) => prev + 1);
+      // Delay visual index update to let the exit animation complete
+      setTimeout(() => {
+        setVisualIndex((prev) => prev + 1);
+      }, 200);
     } else {
       handleRegenerate();
     }
@@ -469,20 +525,22 @@ export default function QuestsPage() {
       </header>
 
       {/* Card Stack - Fixed height container */}
-      <div className="relative px-5 mt-2 flex-1" style={{ minHeight: 0 }}>
-        <AnimatePresence>
-          {quests.slice(currentIndex, currentIndex + 3).map((quest, idx) => (
-            <QuestCard
-              key={quest.id}
-              quest={quest}
-              onAccept={handleAccept}
-              onDiscard={handleDiscard}
-              onRegenerate={handleRegenerate}
-              isTop={idx === 0}
-              mood={request?.mood}
-            />
-          ))}
-        </AnimatePresence>
+      <div className="relative mt-2 flex-1 px-5" style={{ minHeight: 0 }}>
+        <div className="relative w-full h-full">
+          <AnimatePresence mode="popLayout">
+            {quests.slice(visualIndex, visualIndex + 2).map((quest, idx) => (
+              <QuestCard
+                key={quest.id}
+                quest={quest}
+                onAccept={handleAccept}
+                onDiscard={handleDiscard}
+                onRegenerate={handleRegenerate}
+                isTop={idx === 0}
+                mood={request?.mood}
+              />
+            ))}
+          </AnimatePresence>
+        </div>
 
         {currentIndex >= quests.length && (
           <div className="absolute inset-0 flex items-center justify-center">

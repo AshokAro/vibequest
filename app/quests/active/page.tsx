@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { Play, Pause, RotateCcw, Check, MapPin, ChevronDown, ChevronUp, Star } from "lucide-react";
+import { Play, Pause, RotateCcw, Check, MapPin, ChevronDown, ChevronUp, Star, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTapFeedback } from "../../hooks/useTapFeedback";
 import { Button } from "../../components/Button";
@@ -24,6 +24,7 @@ export default function ActiveQuestPage() {
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [expanded, setExpanded] = useState(true);
   const [showCompleteConfirm, setShowCompleteConfirm] = useState(false);
+  const [showAbandonConfirm, setShowAbandonConfirm] = useState(false);
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const visibilityRef = useRef(true);
@@ -85,6 +86,33 @@ export default function ActiveQuestPage() {
     sessionStorage.setItem("questCompletion", JSON.stringify(completionData));
     router.push("/quests/complete");
   }, [quest, secondsElapsed, router]);
+
+  const handleAbandon = useCallback(() => {
+    if (!quest) return;
+
+    // Calculate XP penalty (10% rounded)
+    const penalty = Math.round(quest.xp_reward * 0.1);
+
+    // Get current profile
+    const profile = localStorage.getItem("vibequest_profile");
+    if (profile) {
+      const parsedProfile = JSON.parse(profile);
+      // Subtract penalty from XP
+      parsedProfile.xp = Math.max(0, (parsedProfile.xp || 0) - penalty);
+      // Recalculate level based on new XP
+      const { calculateLevelFromXp } = require("@/lib/leveling");
+      const levelInfo = calculateLevelFromXp(parsedProfile.xp);
+      parsedProfile.level = levelInfo.level;
+      parsedProfile.xp_to_next = levelInfo.xpToNext;
+      localStorage.setItem("vibequest_profile", JSON.stringify(parsedProfile));
+    }
+
+    // Clear active quest
+    sessionStorage.removeItem("activeQuest");
+
+    // Navigate home
+    router.push("/");
+  }, [quest, router]);
 
   if (!quest) {
     return (
@@ -258,7 +286,7 @@ export default function ActiveQuestPage() {
       </section>
 
       {/* Complete Button */}
-      <div className="px-5 pb-4">
+      <div className="px-5 pb-2">
         {!showCompleteConfirm ? (
           <Button
             onClick={() => setShowCompleteConfirm(true)}
@@ -290,6 +318,49 @@ export default function ActiveQuestPage() {
             >
               Confirm
             </Button>
+          </motion.div>
+        )}
+
+        {/* Abandon Quest Button */}
+        {!showCompleteConfirm && (
+          <button
+            onClick={() => setShowAbandonConfirm(true)}
+            className="w-full mt-3 py-2 text-[#999] font-bold text-xs hover:text-[#666] transition-colors flex items-center justify-center gap-1.5"
+          >
+            <X className="w-3.5 h-3.5" />
+            Abandon Quest
+          </button>
+        )}
+
+        {/* Abandon Confirmation */}
+        {showAbandonConfirm && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-4 p-4 bg-[#fef2f2] border-2 border-[#ef4444] rounded-xl"
+          >
+            <p className="text-sm font-bold text-[#ef4444] mb-1">Abandon this quest?</p>
+            <p className="text-xs text-[#666] mb-3">
+              You will lose {Math.round(quest.xp_reward * 0.1)} XP ({Math.round(quest.xp_reward * 0.1)}% penalty)
+            </p>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => setShowAbandonConfirm(false)}
+                size="sm"
+                variant="secondary"
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleAbandon}
+                size="sm"
+                variant="danger"
+                className="flex-1"
+              >
+                Abandon
+              </Button>
+            </div>
           </motion.div>
         )}
       </div>

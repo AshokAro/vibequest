@@ -7,7 +7,8 @@ import { Settings, Dumbbell, Wind, Palette, Users, BookOpen, Target, Flame, Zap,
 import { cn } from "@/lib/utils";
 import { useTapFeedback } from "../hooks/useTapFeedback";
 import { Button } from "../components/Button";
-import type { UserProfile, UserPreferences, Interest, CompletedQuest } from "@/lib/types";
+import type { UserProfile, UserPreferences, Interest, CompletedQuest, SkillLevel } from "@/lib/types";
+import { calculateLevelFromXp, getXpToNextLevel, calculateSkillLevel } from "@/lib/leveling";
 
 // TODO: Consolidate - VALID_INTERESTS is duplicated in profile/page.tsx, settings/page.tsx, and quests/page.tsx
 // Move to lib/constants.ts in future cleanup
@@ -53,22 +54,33 @@ const interestColors: Record<string, string> = {
   niche_unexpected: "bg-[#34d399]",
 };
 
+// Helper to create initial skill level
+function createInitialSkillLevel(): SkillLevel {
+  return {
+    level: 1,
+    progress: 0,
+    pointsInLevel: 0,
+    pointsToNext: 100,
+  };
+}
+
 // Mock user data - in production, fetch from API
+// User starts at level 1 with 0 XP
 const mockUser: UserProfile = {
   id: "user-1",
-  level: 7,
-  xp: 2840,
-  xp_to_next: 3500,
-  momentum_score: 85,
+  level: 1,
+  xp: 0,
+  xp_to_next: getXpToNextLevel(1), // 500
+  momentum_score: 0,
   stats: {
-    fitness: 45,
-    calm: 62,
-    creativity: 78,
-    social: 34,
-    knowledge: 56,
-    discipline: 71,
+    fitness: createInitialSkillLevel(),
+    calm: createInitialSkillLevel(),
+    creativity: createInitialSkillLevel(),
+    social: createInitialSkillLevel(),
+    knowledge: createInitialSkillLevel(),
+    discipline: createInitialSkillLevel(),
   },
-  completed_quests: 23,
+  completed_quests: 0,
 };
 
 // XP Progress Ring
@@ -133,22 +145,18 @@ function XPProgressRing({
   );
 }
 
-// Stat Bar
+// Stat Bar - shows skill level instead of points
 function StatBar({
   label,
-  value,
-  max = 100,
+  skill,
   color,
   icon: Icon,
 }: {
   label: string;
-  value: number;
-  max?: number;
+  skill: SkillLevel;
   color: string;
   icon: React.ElementType;
 }) {
-  const percentage = Math.min((value / max) * 100, 100);
-
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between">
@@ -156,13 +164,15 @@ function StatBar({
           <Icon className={cn("w-3.5 h-3.5", color)} />
           <span className="text-xs font-black text-[#1a1a1a] capitalize">{label}</span>
         </div>
-        <span className={cn("text-xs font-black", color)}>{value}</span>
+        <span className="text-xs font-black text-[#1a1a1a]">
+          Lvl {skill.level}
+        </span>
       </div>
       <div className="h-2 bg-[#e5e5e5] rounded-full overflow-hidden hard-border">
         <motion.div
           className={cn("h-full rounded-full", color.replace("text-", "bg-"))}
           initial={{ width: 0 }}
-          animate={{ width: `${percentage}%` }}
+          animate={{ width: `${skill.progress}%` }}
           transition={{ duration: 0.6, ease: "easeOut" }}
         />
       </div>
@@ -315,12 +325,12 @@ export default function ProfilePage() {
           </div>
 
           <div className="bg-white border-2 border-[#1a1a1a] rounded-xl p-4 space-y-3 hard-shadow">
-            <StatBar label="fitness" value={user.stats.fitness} color={statColors.fitness} icon={Dumbbell} />
-            <StatBar label="calm" value={user.stats.calm} color={statColors.calm} icon={Wind} />
-            <StatBar label="creativity" value={user.stats.creativity} color={statColors.creativity} icon={Palette} />
-            <StatBar label="social" value={user.stats.social} color={statColors.social} icon={Users} />
-            <StatBar label="knowledge" value={user.stats.knowledge} color={statColors.knowledge} icon={BookOpen} />
-            <StatBar label="discipline" value={user.stats.discipline} color={statColors.discipline} icon={Target} />
+            <StatBar label="fitness" skill={user.stats.fitness} color={statColors.fitness} icon={Dumbbell} />
+            <StatBar label="calm" skill={user.stats.calm} color={statColors.calm} icon={Wind} />
+            <StatBar label="creativity" skill={user.stats.creativity} color={statColors.creativity} icon={Palette} />
+            <StatBar label="social" skill={user.stats.social} color={statColors.social} icon={Users} />
+            <StatBar label="knowledge" skill={user.stats.knowledge} color={statColors.knowledge} icon={BookOpen} />
+            <StatBar label="discipline" skill={user.stats.discipline} color={statColors.discipline} icon={Target} />
           </div>
         </section>
 
@@ -333,13 +343,13 @@ export default function ProfilePage() {
             className="h-auto py-3"
           >
             <div className="text-center">
-              <span className="text-2xl font-black text-[#1a1a1a]">{completedQuests.length || user.completed_quests}</span>
+              <span className="text-2xl font-black text-[#1a1a1a]">{completedQuests.length}</span>
               <p className="text-xs font-black text-[#1a1a1a]/70 mt-0.5">Quests Done</p>
             </div>
           </Button>
           <div className="bg-[#22d3ee] border-2 border-[#1a1a1a] rounded-xl p-3 text-center hard-shadow flex items-center justify-center">
             <div>
-              <span className="text-2xl font-black text-[#1a1a1a]">{Math.floor(user.xp / 50)}</span>
+              <span className="text-2xl font-black text-[#1a1a1a]">{Math.floor(completedQuests.reduce((sum, q) => sum + (q.duration || q.quest?.duration_minutes * 60 || 0), 0) / 3600)}</span>
               <p className="text-xs font-black text-[#1a1a1a]/70 mt-0.5">Hours Active</p>
             </div>
           </div>
@@ -349,7 +359,7 @@ export default function ProfilePage() {
         <section className="bg-[#fbbf24] border-2 border-[#1a1a1a] rounded-xl p-3 hard-shadow">
           <div className="flex items-start gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-white hard-border flex items-center justify-center flex-shrink-0">
-              <Flame className="w-4 h-4 text-[#1a1a1a]" />
+              <Flame className="w-4 h-4 text-[#f59e0b] fill-current" />
             </div>
             <div>
               <h3 className="text-xs font-black text-[#1a1a1a]">Momentum</h3>

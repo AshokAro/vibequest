@@ -242,7 +242,7 @@ export default function ProfilePage() {
       <header className="px-5 pt-5 pb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Button
-            onClick={withTap(() => router.push("/"))}
+            onClick={() => router.push("/")}
             size="icon"
             variant="secondary"
             ariaLabel="Back to Quests"
@@ -252,7 +252,7 @@ export default function ProfilePage() {
           <h1 className="text-lg font-black text-[#1a1a1a] tracking-tight">Profile</h1>
         </div>
         <Button
-          onClick={withTap(() => router.push("/settings"))}
+          onClick={() => router.push("/settings")}
           size="icon"
           variant="secondary"
           ariaLabel="Settings"
@@ -375,7 +375,7 @@ export default function ProfilePage() {
           <p className="text-xs font-bold text-[#666] uppercase tracking-wider">Dev Options</p>
           <div className="flex gap-2">
             <Button
-              onClick={withTap(() => router.push("/feed"))}
+              onClick={() => router.push("/feed")}
               size="sm"
               variant="secondary"
               className="flex-1"
@@ -383,10 +383,10 @@ export default function ProfilePage() {
               Feed
             </Button>
             <Button
-              onClick={withTap(() => {
+              onClick={() => {
                 localStorage.removeItem("vibequest_preferences");
                 router.push("/onboarding");
-              })}
+              }}
               size="sm"
               variant="danger"
               className="flex-1"

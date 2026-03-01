@@ -373,8 +373,6 @@ export default function QuestsPage() {
     }
   }, []);
 
-  const { onTap } = useTapFeedback();
-
   const handleAccept = useCallback(() => {
     triggerHaptic("success");
     const quest = quests[visualIndex];
@@ -529,7 +527,7 @@ export default function QuestsPage() {
           </p>
         </div>
         <Button
-          onClick={onTap(() => router.push("/"))}
+          onClick={() => router.push("/")}
           size="icon"
           variant="secondary"
           className="w-10 h-10"

@@ -1,8 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { ReactNode, useCallback } from "react";
-import { useTapFeedback } from "../hooks/useTapFeedback";
+import { ReactNode } from "react";
 
 type ButtonSize = "sm" | "md" | "lg" | "icon";
 type ButtonVariant = "primary" | "secondary" | "success" | "danger";
@@ -71,18 +70,10 @@ export function Button({
   ariaLabel,
   type = "button",
 }: ButtonProps) {
-  const { onTap } = useTapFeedback();
-
-  const handleClick = useCallback(() => {
-    if (!disabled) {
-      onTap(onClick);
-    }
-  }, [disabled, onClick, onTap]);
-
   return (
     <button
       type={type}
-      onClick={handleClick}
+      onClick={onClick}
       disabled={disabled}
       aria-label={ariaLabel}
       className={cn(
@@ -141,17 +132,9 @@ export function CircleButton({
   className,
   ariaLabel,
 }: CircleButtonProps) {
-  const { onTap } = useTapFeedback();
-
-  const handleClick = useCallback(() => {
-    if (!disabled) {
-      onTap(onClick);
-    }
-  }, [disabled, onClick, onTap]);
-
   return (
     <button
-      onClick={handleClick}
+      onClick={onClick}
       disabled={disabled}
       aria-label={ariaLabel}
       className={cn(
@@ -186,15 +169,9 @@ export function SelectablePill({
   className,
   ariaLabel,
 }: SelectablePillProps) {
-  const { onTap } = useTapFeedback();
-
-  const handleClick = useCallback(() => {
-    onTap(onClick);
-  }, [onClick, onTap]);
-
   return (
     <button
-      onClick={handleClick}
+      onClick={onClick}
       aria-label={ariaLabel}
       className={cn(
         // Base styles
@@ -220,15 +197,9 @@ export function IconButton({
   variant = "secondary",
   className,
 }: IconButtonProps) {
-  const { onTap } = useTapFeedback();
-
-  const handleClick = useCallback(() => {
-    onTap(onClick);
-  }, [onClick, onTap]);
-
   return (
     <button
-      onClick={handleClick}
+      onClick={onClick}
       aria-label={ariaLabel}
       className={cn(
         // Base styles

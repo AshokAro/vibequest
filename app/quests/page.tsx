@@ -481,23 +481,36 @@ export default function QuestsPage() {
 
   if (loading) {
     return (
-      <main className="h-full flex items-center justify-center safe-top safe-x bg-[#fafafa]">
-        <div className="text-center">
-          <div className="w-14 h-14 bg-[#c084fc] hard-border hard-shadow rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse">
-            <RefreshCw className="w-7 h-7 text-white animate-spin" />
+      <main className="h-full flex flex-col safe-top safe-x bg-[#fafafa]">
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-14 h-14 bg-[#c084fc] hard-border hard-shadow rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse">
+              <RefreshCw className="w-7 h-7 text-white animate-spin" />
+            </div>
+            <AnimatePresence mode="wait">
+              <motion.p
+                key={loadingMessage}
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -5 }}
+                transition={{ duration: 0.3 }}
+                className="text-[#1a1a1a] font-black"
+              >
+                {loadingMessage}
+              </motion.p>
+            </AnimatePresence>
           </div>
-          <AnimatePresence mode="wait">
-            <motion.p
-              key={loadingMessage}
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -5 }}
-              transition={{ duration: 0.3 }}
-              className="text-[#1a1a1a] font-black"
-            >
-              {loadingMessage}
-            </motion.p>
-          </AnimatePresence>
+        </div>
+
+        {/* Stop Button - Fixed at bottom */}
+        <div className="py-6 flex-shrink-0">
+          <button
+            onClick={() => router.push("/")}
+            className="w-full py-3 text-[#999] font-bold text-xs hover:text-[#666] transition-colors flex items-center justify-center gap-1.5"
+          >
+            <X className="w-3.5 h-3.5" />
+            Stop Generating
+          </button>
         </div>
       </main>
     );

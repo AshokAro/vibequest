@@ -1,67 +1,99 @@
 "use client";
 
-import { useCallback, useRef, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 type HapticType = "light" | "medium" | "heavy" | "success" | "error";
 
+// Global audio context shared across the app
+let globalAudioContext: AudioContext | null = null;
+let isAudioContextInitialized = false;
+
+function getAudioContext(): AudioContext | null {
+  if (typeof window === "undefined") return null;
+
+  if (!globalAudioContext) {
+    const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (AudioContextClass) {
+      globalAudioContext = new AudioContextClass();
+    }
+  }
+
+  return globalAudioContext;
+}
+
+function initAudioContext(): void {
+  if (isAudioContextInitialized) return;
+
+  const ctx = getAudioContext();
+  if (ctx && ctx.state === "suspended") {
+    ctx.resume().then(() => {
+      isAudioContextInitialized = true;
+    }).catch(() => {
+      // Will retry on next interaction
+    });
+  } else if (ctx?.state === "running") {
+    isAudioContextInitialized = true;
+  }
+}
+
+// Ensure audio is unlocked on first interaction
+function setupAudioUnlock() {
+  const unlockAudio = () => {
+    initAudioContext();
+  };
+
+  // Use multiple events to ensure we catch the first interaction
+  const events = ["touchstart", "click", "mousedown", "keydown"];
+  events.forEach(event => {
+    document.addEventListener(event, unlockAudio, { once: true, passive: true });
+  });
+}
+
+// Setup unlock listeners immediately when this module loads
+if (typeof window !== "undefined") {
+  setupAudioUnlock();
+}
+
 export function useHaptic() {
-  const audioContextRef = useRef<AudioContext | null>(null);
   const [audioReady, setAudioReady] = useState(false);
 
-  // Initialize audio context on first user interaction
+  // Check and update audio ready state
   useEffect(() => {
-    const initAudio = async () => {
-      if (!audioContextRef.current) {
-        const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-        if (AudioContextClass) {
-          audioContextRef.current = new AudioContextClass();
-        }
-      }
-
-      // Resume audio context if suspended (needed for mobile browsers)
-      if (audioContextRef.current?.state === "suspended") {
-        try {
-          await audioContextRef.current.resume();
-          setAudioReady(true);
-        } catch (e) {
-          console.warn("Could not resume audio context:", e);
-        }
-      } else if (audioContextRef.current?.state === "running") {
+    const checkState = () => {
+      const ctx = getAudioContext();
+      if (ctx?.state === "running") {
         setAudioReady(true);
+        isAudioContextInitialized = true;
       }
     };
 
-    // Multiple events to catch user interaction
-    const events = ["click", "touchstart", "touchend", "mousedown", "keydown"];
-    events.forEach(event => {
-      window.addEventListener(event, initAudio, { once: true, passive: true });
-    });
+    checkState();
 
-    return () => {
-      events.forEach(event => {
-        window.removeEventListener(event, initAudio);
-      });
-    };
+    // Poll for state changes (mobile browsers may suspend context)
+    const interval = setInterval(checkState, 1000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const playTapSound = useCallback(async (intensity: HapticType = "light") => {
-    if (!audioContextRef.current) {
-      // Try to create audio context on demand
-      const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      if (AudioContextClass) {
-        audioContextRef.current = new AudioContextClass();
-      }
-    }
+    const ctx = getAudioContext();
+    if (!ctx) return;
 
-    if (!audioContextRef.current) return;
-
-    const ctx = audioContextRef.current;
-
-    // Ensure context is running before playing - critical for mobile browsers
+    // Always try to resume context before playing - critical for mobile
     if (ctx.state === "suspended") {
       try {
         await ctx.resume();
+        isAudioContextInitialized = true;
         setAudioReady(true);
+      } catch {
+        return;
+      }
+    }
+
+    // Double-check context is running
+    if (ctx.state !== "running") {
+      try {
+        await ctx.resume();
       } catch {
         return;
       }
@@ -96,6 +128,7 @@ export function useHaptic() {
       oscillator.stop(ctx.currentTime + duration);
     } catch (e) {
       // Silent fail if audio can't play
+      console.warn("Audio play failed:", e);
     }
   }, []);
 

@@ -284,9 +284,6 @@ export default function QuestCompletePage() {
           parsedProfile.stats = afterStats;
 
           localStorage.setItem("vibequest_profile", JSON.stringify(parsedProfile));
-
-          // Clear session storage to prevent re-processing on refresh
-          sessionStorage.removeItem("questCompletion");
         }
       }
   }, []);
@@ -349,6 +346,9 @@ export default function QuestCompletePage() {
 
       console.log("[QuestComplete] History and feedback saved:", historyItem);
     }
+
+    // Clear session storage after successfully saving
+    sessionStorage.removeItem("questCompletion");
 
     // Navigate home
     router.push("/");

@@ -484,14 +484,14 @@ export default function QuestCompletePage() {
         className="w-full max-w-[280px] grid grid-cols-2 gap-3"
       >
         <button
-          onClick={handleShare}
+          onClick={withTap(handleShare)}
           className="flex items-center justify-center gap-2 px-2 py-3 rounded-xl border-2 border-[#1a1a1a] bg-white text-[#1a1a1a] tap-target transition-all duration-200 hard-shadow hard-shadow-hover"
         >
           <Share2 className="w-4 h-4" />
           <span className="text-sm font-black">Share the W</span>
         </button>
         <button
-          onClick={handleDone}
+          onClick={withTap(handleDone, "success")}
           className="flex items-center justify-center gap-2 px-2 py-3 rounded-xl border-2 border-[#1a1a1a] bg-[#ff6b9d] text-white tap-target transition-all duration-200 hard-shadow"
         >
           <Check className="w-4 h-4" />

@@ -12,6 +12,7 @@ interface UseSwipeOptions {
   onSwipeLeft?: () => void;
   onSwipeRight?: () => void;
   onSwipeUp?: () => void;
+  onSwipeStart?: () => void;
   threshold?: number;
 }
 
@@ -19,12 +20,14 @@ export function useSwipe({
   onSwipeLeft,
   onSwipeRight,
   onSwipeUp,
+  onSwipeStart,
   threshold = 100,
 }: UseSwipeOptions) {
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const startPos = useRef({ x: 0, y: 0 });
   const currentPos = useRef({ x: 0, y: 0 });
+  const hasTriggeredStart = useRef(false);
 
   const handleTouchStart = useCallback((e: React.TouchEvent | React.MouseEvent) => {
     const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
@@ -33,7 +36,12 @@ export function useSwipe({
     startPos.current = { x: clientX, y: clientY };
     currentPos.current = { x: clientX, y: clientY };
     setIsDragging(true);
-  }, []);
+    hasTriggeredStart.current = false;
+
+    // Trigger start callback immediately for audio unlock
+    onSwipeStart?.();
+    hasTriggeredStart.current = true;
+  }, [onSwipeStart]);
 
   const handleTouchMove = useCallback((e: React.TouchEvent | React.MouseEvent) => {
     if (!isDragging) return;

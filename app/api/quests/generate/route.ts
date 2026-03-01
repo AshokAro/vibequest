@@ -501,25 +501,24 @@ ACTION TYPES:
 - PHOTOGRAPH: shoot something with a specific framing rule or subject restriction
 - EXPLORE: go to a part of a location most people miss, find something overlooked
 
-Spread action types across the 5 quests. Do not default to the same 2-3 types repeatedly — draw from the full list and from the specific mechanics listed under the user's selected interests.
+Spread action types across the 5 quests. Draw from the full list and from the specific mechanics listed under the user's selected interests.
 
 ARTEFACT RULE:
-At least 2 of the 5 quests must produce a physical or shareable artefact — something the user has, sends, or leaves behind. Examples:
-- A folded origami crane left on a bench
-- A leaf carried home from a park
-- A voice note sent to a friend from inside a market
-- A locally brewed beer tried and rated in one sentence
-- A receipt from the most unusual thing bought at a flea market
-- A video call showing a friend the view from a specific spot
+At least 2 of the 5 quests must produce a physical or shareable artefact — something the user has, sends, or leaves behind. Include the artefact naturally in the description — do not label it.
 
-Include the artefact naturally in the description — do not label it.
+VOICE EXAMPLES — TONE ONLY, NOT ACTIVITY TEMPLATES:
+These examples exist to show writing style only. Do not replicate the activities, locations, or mechanics shown. Generate entirely different quests.
 
-GOOD QUEST EXAMPLES:
+What these examples demonstrate:
+- Start with a specific observation about the place, not an instruction
+- State the constraint plainly and move on — do not explain it
+- End with something that acknowledges the oddness of the task without winking too hard at it
+
 "Toit has a rotating tap list and the bartender will always have a strong opinion about which one to try. Sit at the bar, order whatever they recommend without looking at the menu, and write one sentence about it before you leave. One sentence. That's your review."
 
-"Go to Lalbagh's main gate and find the oldest tree near the rock formation. Pick up one fallen leaf from the ground. Carry it home. That's it."
+"Find the stretch of Commercial Street where the fabric shops start. Go into exactly 3 shops, touch the most expensive fabric they have, and leave without buying anything. Take note of which shopkeeper is the most unbothered by this."
 
-"Video call one friend from the top of the bandstand steps at Cubbon Park. Show them the view for 30 seconds without saying anything. Then hang up."
+These are voice references. The beer, the fabric — do not reuse these. Write new quests using the same register applied to entirely different activities and locations.
 
 BAD QUEST (never do this):
 "Stand at the edge of Sankey Tank as the golden hour light fractures across the water and breathe in the smell of earth and possibility at Sri Lakshmi Nature Café nearby..."
@@ -547,25 +546,25 @@ Each step must:
 - Be under 12 words
 - Be completable before the next step begins
 
-Good steps (Toit quest):
-1. "Walk in and sit at the bar, not a table"
-2. "Ask the bartender what they'd recommend today"
-3. "Order without looking at the menu"
-4. "Write one sentence about it before you leave"
+Good steps (fabric shop quest):
+1. "Find where the fabric shops begin on Commercial Street"
+2. "Go into exactly 3 shops and touch the most expensive fabric"
+3. "Leave without buying anything"
+4. "Note which shopkeeper was most unbothered"
 
 Bad steps:
-1. "Visit Toit brewery"
-2. "Try a recommended beer"
-3. "Write about your experience"
+1. "Visit Commercial Street"
+2. "Go into some shops"
+3. "Observe the shopkeepers"
 
 Test: can someone follow these steps in real time without re-reading the description? If yes — correct.
 
 TIME AND BUDGET — STAY CLOSE:
-- Time and budget are upper limits, not targets — but stay within 20% of them
+- Time and budget are upper limits — but stay within 20% of them
 - A 60-minute budget should produce quests between 45-60 minutes, not 15
-- A ₹500 budget should produce quests that use some of it, not default to free every time
-- Free and short quests are fine when the activity naturally fits — do not pad, but do not drastically undershoot either
-- Each quest has its own duration and cost — they can vary across the 5, but none should feel like the user's input was ignored
+- A ₹500 budget should produce quests that use some of it — do not default to free every time
+- Free and short quests are fine when the activity naturally fits — but none should feel like the user's input was ignored
+- Each quest has its own duration and cost — they can vary across the 5
 
 INTRINSIC REWARDS:
 Rate each stat as:
@@ -645,7 +644,7 @@ CULTURE & KNOWLEDGE
 NATURE & OUTDOORS
 - Birdwatching → count distinct species at a named location within 20 minutes, no app
 - Botany / Plants → identify 5 plant species without an app, sketch or photograph each
-- Parks / Gardens → find the oldest tree, collect one fallen leaf, carry it home
+- Parks / Gardens → find the oldest tree, observe its root system, estimate its age by asking someone nearby
 - Stargazing → find the darkest nearby spot, identify 3 constellations
 - Weather Watching → document sky changes over 15 minutes from one fixed spot
 - Insects / Bugs → find 5 distinct species, document each, note what they are doing
@@ -693,12 +692,18 @@ NICHE & UNEXPECTED (weight heavily when selected):
 INTEREST INTERSECTION RULE:
 Combine 2 or more selected interests into one quest where it feels natural. Examples:
 - Fermentation/Brewing + Talking to Strangers → ask the bartender what their most unusual regular orders, then try it
-- Parks/Gardens + Connect → find the oldest tree, pick up a fallen leaf, video call a friend and show them
 - Running + Maps/Cartography → run a route between two named points, draw it from memory after
 Do not force intersections that make the activity awkward.
 
 WILDCARD RULE:
-One of the 5 quests must use none of the user's selected interests. Wildcard test: would this quest exist if the interest list were removed entirely? It should. Do not mention it is a wildcard in the description. Mark it in the JSON only.
+One of the 5 quests must use none of the user's selected interests and must not resemble any of the voice examples in this prompt.
+
+Wildcard test — all three must be true:
+1. Would this quest exist if the interest list were removed entirely?
+2. Does it use a mechanic not shown in any example in this prompt?
+3. Is the primary action type different from the other 4 quests?
+
+If all three are true: it is a valid wildcard. Do not mention it is a wildcard in the description. Mark it in the JSON only.
 
 INDIAN CITY REFERENCE (confirmed real areas only):
 - Bangalore: Indiranagar, Church Street, Cubbon Park, 12th Main, KR Market, Lalbagh, Sankey Tank, MG Road, Brigade Road, Koramangala, Commercial Street, Malleshwaram, Jayanagar, Toit Brewery (Museum Road)
@@ -754,34 +759,32 @@ Before finalising, check:
 3. STATS CHECK: Each quest must have exactly one "2", one "1", and four "0"s in intrinsic_rewards.
 4. TIME + BUDGET CHECK: Each quest duration must be within 20% of the user's stated maximum. Each quest cost must be reasonable relative to the stated budget — not defaulting to free unless budget is zero.
 5. ICON CHECK: Each icon must represent a specific noun from that quest's description. All 5 must be different.
+6. WILDCARD CHECK: Confirm the wildcard quest passes all three wildcard tests. If not: rewrite it.
 
 Output valid JSON with exactly 5 quests:
+
 {
   "quests": [
     {
       "title": "...",
-      "duration": "20 minutes",
-      "estimated_cost": "₹0",
-      "description": "Cubbon Park has an unreasonable number of benches. Photograph exactly 7 of them.",
-      "steps": ["Head to Cubbon Park", "Find and photograph exactly 7 different benches", "No repeats"],
+      "duration": "...",
+      "estimated_cost": "...",
+      "description": "...",
+      "steps": ["...", "...", "..."],
       "intrinsic_rewards": {
         "fitness": 0,
         "calm": 0,
-        "creativity": 2,
+        "creativity": 0,
         "social": 0,
         "knowledge": 0,
-        "discipline": 1
+        "discipline": 0
       },
-      "interests_used": ["photography"],
-      "icon": "🪑",
+      "interests_used": ["...", "..."],
+      "icon": "...",
       "wildcard": false
     }
   ]
-}
-
-IMPORTANT: Replace the example values with your own quest content, but keep the same JSON structure.
-- The "steps" array is REQUIRED and must have 2-4 items
-- The "icon" field must be a single emoji like "🪑", "🌸", "🪟", "☕", "🐦", etc.`;
+}`;
 
   const response = await fetch(OPENAI_URL, {
     method: "POST",

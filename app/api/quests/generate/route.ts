@@ -531,7 +531,7 @@ Fails: model explaining its own design choices.
 DESCRIPTION RULES:
 - Start with the action — no scene-setting, no "today you will..."
 - Embed constraints naturally in the prose — never list or label them
-- 4-6 sentences max
+- 4-5 sentences max
 - Dry wit, specific unexpected detail, offhand observation — write like someone who's been there
 - Never explain what the user will "get out of it"
 - Banned words: "explore", "discover", "embrace", "soak in", "wander", "journey", "vibe" (as verb), "intention", "mindful", "presence", "unique", "hidden gem", "off the beaten path", "immersive"
